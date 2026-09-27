@@ -15,20 +15,20 @@ jobs:
     - name: Set up Java
       uses: actions/setup-java@v4
       with:
-        distribution: 'zulu'
+        distribution: 'temurin'
         java-version: '17'
 
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.x'
+        flutter-version: '3.19.0'
         channel: 'stable'
 
     - name: Install dependencies
       run: flutter pub get
 
     - name: Build Release APK
-      run: flutter build apk --release
+      run: flutter build apk --release --no-pub
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
