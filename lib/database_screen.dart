@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:pdf/pdf.dart' as pw;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -351,7 +350,7 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), spreadRadius: 1, blurRadius: 3)],
+                  boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3)],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -407,7 +406,7 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
                             SizedBox(
                               width: 140,
                               child: DropdownButtonFormField<String>(
-                                value: selectedDateFrom,
+                                initialValue: selectedDateFrom,
                                 isExpanded: true,
                                 hint: const Text("بداية التاريخ", style: TextStyle(fontSize: 11)),
                                 items: [
@@ -422,7 +421,7 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
                             SizedBox(
                               width: 130,
                               child: DropdownButtonFormField<String>(
-                                value: selectedOrderNum,
+                                initialValue: selectedOrderNum,
                                 isExpanded: true,
                                 hint: const Text("رقم الطلب", style: TextStyle(fontSize: 11)),
                                 items: [
@@ -441,7 +440,7 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
                             SizedBox(
                               width: 240,
                               child: DropdownButtonFormField<String>(
-                                value: selectedLocation,
+                                initialValue: selectedLocation,
                                 isExpanded: true,
                                 hint: const Text("مكان العمل", style: TextStyle(fontSize: 11)),
                                 items: [
@@ -456,7 +455,7 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
                             SizedBox(
                               width: 140,
                               child: DropdownButtonFormField<String>(
-                                value: selectedDateTo,
+                                initialValue: selectedDateTo,
                                 isExpanded: true,
                                 hint: const Text("نهاية التاريخ", style: TextStyle(fontSize: 11)),
                                 items: [

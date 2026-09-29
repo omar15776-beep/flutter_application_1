@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:pdf/pdf.dart' as pw;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -270,7 +269,7 @@ class _StatementScreenState extends State<StatementScreen> {
                       children: [
                         const Text("🔤 نوع الخط المستخدم:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple)),
                         DropdownButtonFormField<String>(
-                          value: selectedFontFamily,
+                          initialValue: selectedFontFamily,
                           items: const [
                             DropdownMenuItem(value: "Cairo", child: Text("خط كايرو (Cairo)")),
                             DropdownMenuItem(value: "Tajawal", child: Text("خط تجوال (Tajawal)")),
@@ -292,7 +291,7 @@ class _StatementScreenState extends State<StatementScreen> {
                           Text("حجم خط اسم المؤسسة: ${pdfCompanyNameFontSize.toInt()} px"),
                           Slider(value: pdfCompanyNameFontSize, min: 10, max: 35, divisions: 25, onChanged: (val) => setDialogState(() => pdfCompanyNameFontSize = val)),
                           DropdownButtonFormField<Color>(
-                            value: pdfCompanyNameColor,
+                            initialValue: pdfCompanyNameColor,
                             items: const [
                               DropdownMenuItem(value: Color(0xFF1E293B), child: Text("رمادي غامق")),
                               DropdownMenuItem(value: Color(0xFF1E3A8A), child: Text("أزرق غامق")),
@@ -323,7 +322,7 @@ class _StatementScreenState extends State<StatementScreen> {
                         Text("حجم خط الشريط العلوي: ${pdfHeaderBarFontSize.toInt()} px"),
                         Slider(value: pdfHeaderBarFontSize, min: 6, max: 16, divisions: 10, onChanged: (val) => setDialogState(() => pdfHeaderBarFontSize = val)),
                         DropdownButtonFormField<Color>(
-                          value: pdfHeaderBarTextColor,
+                          initialValue: pdfHeaderBarTextColor,
                           items: const [
                             DropdownMenuItem(value: Color(0xFF0F172A), child: Text("أسود/رمادي داكن")),
                             DropdownMenuItem(value: Color(0xFF1E3A8A), child: Text("أزرق غامق")),
@@ -346,7 +345,7 @@ class _StatementScreenState extends State<StatementScreen> {
                         Slider(value: pdfRowHeight, min: 12, max: 50, divisions: 38, onChanged: (val) => setDialogState(() => pdfRowHeight = val)),
 
                         DropdownButtonFormField<Color>(
-                          value: pdfRowTextColor,
+                          initialValue: pdfRowTextColor,
                           items: const [
                             DropdownMenuItem(value: Color(0xFF000000), child: Text("أسود صريح")),
                             DropdownMenuItem(value: Color(0xFF334155), child: Text("رمادي داكن")),
@@ -357,7 +356,7 @@ class _StatementScreenState extends State<StatementScreen> {
                         ),
                         const SizedBox(height: 10),
                         DropdownButtonFormField<Color>(
-                          value: pdfHeaderColor,
+                          initialValue: pdfHeaderColor,
                           items: const [
                             DropdownMenuItem(value: Color(0xFF1E3A8A), child: Text("أزرق غامق")),
                             DropdownMenuItem(value: Color(0xFF334155), child: Text("رمادي داكن")),
@@ -403,7 +402,7 @@ class _StatementScreenState extends State<StatementScreen> {
                         Slider(value: pdfTotalsFontSize, min: 8, max: 24, divisions: 16, onChanged: (val) => setDialogState(() => pdfTotalsFontSize = val)),
                         
                         DropdownButtonFormField<Color>(
-                          value: pdfTotalsTextColor,
+                          initialValue: pdfTotalsTextColor,
                           items: const [
                             DropdownMenuItem(value: Colors.white, child: Text("أبيض")),
                             DropdownMenuItem(value: Color(0xFFFEF08A), child: Text("أصفر فاتح")),
@@ -413,7 +412,7 @@ class _StatementScreenState extends State<StatementScreen> {
                         ),
                         const SizedBox(height: 10),
                         DropdownButtonFormField<Color>(
-                          value: pdfTotalsBarColor,
+                          initialValue: pdfTotalsBarColor,
                           items: const [
                             DropdownMenuItem(value: Color(0xFF1E3A8A), child: Text("أزرق غامق")),
                             DropdownMenuItem(value: Color(0xFF334155), child: Text("رمادي داكن")),
@@ -536,7 +535,7 @@ class _StatementScreenState extends State<StatementScreen> {
                             font: fontBold,
                             fontSize: pdfCompanyNameFontSize,
                             fontWeight: pw.FontWeight.bold,
-                            color: pw.PdfColor.fromInt(pdfCompanyNameColor.value),
+                            color: pw.PdfColor.fromInt(pdfCompanyNameColor.toARGB32()),
                           ),
                         ),
                       if (pdfShowCompanyName && pdfShowLogo && logoImage != null)
@@ -558,8 +557,8 @@ class _StatementScreenState extends State<StatementScreen> {
                 child: pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text("$pdfHeaderQuoteText ${selectedClient ?? ''}", style: pw.TextStyle(font: fontBold, fontSize: pdfHeaderBarFontSize, fontWeight: pw.FontWeight.bold, color: pw.PdfColor.fromInt(pdfHeaderBarTextColor.value))),
-                    pw.Text("$pdfHeaderDateText ${DateTime.now().toString().split(' ')[0]}", style: pw.TextStyle(font: font, fontSize: pdfHeaderBarFontSize, color: pw.PdfColor.fromInt(pdfHeaderBarTextColor.value))),
+                    pw.Text("$pdfHeaderQuoteText ${selectedClient ?? ''}", style: pw.TextStyle(font: fontBold, fontSize: pdfHeaderBarFontSize, fontWeight: pw.FontWeight.bold, color: pw.PdfColor.fromInt(pdfHeaderBarTextColor.toARGB32()))),
+                    pw.Text("$pdfHeaderDateText ${DateTime.now().toString().split(' ')[0]}", style: pw.TextStyle(font: font, fontSize: pdfHeaderBarFontSize, color: pw.PdfColor.fromInt(pdfHeaderBarTextColor.toARGB32()))),
                   ],
                 ),
               ),
@@ -568,8 +567,8 @@ class _StatementScreenState extends State<StatementScreen> {
               // جدول الـ PDF (بدون عمود رقم الطلب)
               pw.Table.fromTextArray(
                 headerStyle: pw.TextStyle(font: fontBold, fontWeight: pw.FontWeight.bold, color: pw.PdfColors.white, fontSize: pdfHeaderTableFontSize),
-                headerDecoration: pw.BoxDecoration(color: pw.PdfColor.fromInt(pdfHeaderColor.value)),
-                cellStyle: pw.TextStyle(font: font, fontSize: pdfRowFontSize, color: pw.PdfColor.fromInt(pdfRowTextColor.value)),
+                headerDecoration: pw.BoxDecoration(color: pw.PdfColor.fromInt(pdfHeaderColor.toARGB32())),
+                cellStyle: pw.TextStyle(font: font, fontSize: pdfRowFontSize, color: pw.PdfColor.fromInt(pdfRowTextColor.toARGB32())),
                 cellAlignment: pw.Alignment.center,
                 cellHeight: pdfRowHeight,
                 columnWidths: {
@@ -628,13 +627,13 @@ class _StatementScreenState extends State<StatementScreen> {
               // شريط الإجماليات السفلي
               pw.Container(
                 padding: const pw.EdgeInsets.all(6),
-                decoration: pw.BoxDecoration(color: pw.PdfColor.fromInt(pdfTotalsBarColor.value)),
+                decoration: pw.BoxDecoration(color: pw.PdfColor.fromInt(pdfTotalsBarColor.toARGB32())),
                 child: pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
                   children: [
-                    pw.Text("إجمالي الباقي: ${_formatRoundedMoney(remaining)} ج.م", style: pw.TextStyle(font: fontBold, color: pw.PdfColor.fromInt(pdfTotalsTextColor.value), fontSize: pdfTotalsFontSize)),
-                    pw.Text("إجمالي المدفوعات: ${_formatMoney(totalPaid)} ج.م", style: pw.TextStyle(font: fontBold, color: pw.PdfColor.fromInt(pdfTotalsTextColor.value), fontSize: pdfTotalsFontSize)),
-                    pw.Text("إجمالي الحساب: ${_formatRoundedMoney(totalAcc)} ج.م", style: pw.TextStyle(font: fontBold, color: pw.PdfColor.fromInt(pdfTotalsTextColor.value), fontSize: pdfTotalsFontSize)),
+                    pw.Text("إجمالي الباقي: ${_formatRoundedMoney(remaining)} ج.م", style: pw.TextStyle(font: fontBold, color: pw.PdfColor.fromInt(pdfTotalsTextColor.toARGB32()), fontSize: pdfTotalsFontSize)),
+                    pw.Text("إجمالي المدفوعات: ${_formatMoney(totalPaid)} ج.م", style: pw.TextStyle(font: fontBold, color: pw.PdfColor.fromInt(pdfTotalsTextColor.toARGB32()), fontSize: pdfTotalsFontSize)),
+                    pw.Text("إجمالي الحساب: ${_formatRoundedMoney(totalAcc)} ج.م", style: pw.TextStyle(font: fontBold, color: pw.PdfColor.fromInt(pdfTotalsTextColor.toARGB32()), fontSize: pdfTotalsFontSize)),
                   ],
                 ),
               ),
@@ -738,7 +737,7 @@ class _StatementScreenState extends State<StatementScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), spreadRadius: 1, blurRadius: 3)],
+                  boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3)],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -793,7 +792,7 @@ class _StatementScreenState extends State<StatementScreen> {
                                 child: SizedBox(
                                   height: 36,
                                   child: DropdownButtonFormField<String>(
-                                    value: selectedDateFrom,
+                                    initialValue: selectedDateFrom,
                                     isExpanded: true,
                                     hint: const Text("تاريخ البداية", style: TextStyle(fontSize: 11)),
                                     items: datesList.map((d) => DropdownMenuItem(value: d, child: Text(d, style: TextStyle(fontSize: 11)))).toList(),
@@ -807,7 +806,7 @@ class _StatementScreenState extends State<StatementScreen> {
                                 child: SizedBox(
                                   height: 36,
                                   child: DropdownButtonFormField<String>(
-                                    value: selectedOrderNum,
+                                    initialValue: selectedOrderNum,
                                     isExpanded: true,
                                     hint: const Text("رقم الطلب", style: TextStyle(fontSize: 11)),
                                     items: orderNumbers.map((ord) => DropdownMenuItem(value: ord, child: Text(ord, style: TextStyle(fontSize: 11)))).toList(),
@@ -825,7 +824,7 @@ class _StatementScreenState extends State<StatementScreen> {
                                 child: SizedBox(
                                   height: 36,
                                   child: DropdownButtonFormField<String>(
-                                    value: selectedLocation,
+                                    initialValue: selectedLocation,
                                     isExpanded: true,
                                     hint: const Text("مكان العمل", style: TextStyle(fontSize: 11)),
                                     items: locationsList.map((l) => DropdownMenuItem(value: l, child: Text(l, style: TextStyle(fontSize: 11)))).toList(),
@@ -839,7 +838,7 @@ class _StatementScreenState extends State<StatementScreen> {
                                 child: SizedBox(
                                   height: 36,
                                   child: DropdownButtonFormField<String>(
-                                    value: selectedDateTo,
+                                    initialValue: selectedDateTo,
                                     isExpanded: true,
                                     hint: const Text("تاريخ النهاية", style: TextStyle(fontSize: 11)),
                                     items: datesList.map((d) => DropdownMenuItem(value: d, child: Text(d, style: TextStyle(fontSize: 11)))).toList(),

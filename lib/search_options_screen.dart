@@ -280,7 +280,7 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
             "${idx + 1}",
           ];
         }).toList();
-        totalsRow = ["-", "-", "${_formatMoney(sumRem)} ج.م", "${_formatMoney(sumPaid)} ج.م", "${_formatMoney(sumTotal)} ج.م", "-", "${sumArea.toStringAsFixed(2)}", "-", "-", "الإجمالي الكلي", ""];
+        totalsRow = ["-", "-", "${_formatMoney(sumRem)} ج.م", "${_formatMoney(sumPaid)} ج.م", "${_formatMoney(sumTotal)} ج.م", "-", (sumArea.toStringAsFixed(2)), "-", "-", "الإجمالي الكلي", ""];
       }
 
       pdfRows.add(totalsRow);
@@ -421,7 +421,7 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), spreadRadius: 1, blurRadius: 3)],
+                  boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3)],
                   border: Border.all(color: Colors.grey.shade300),
                 ),
                 child: Column(
@@ -476,7 +476,7 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: selectedOrderNum,
+                            initialValue: selectedOrderNum,
                             isExpanded: true,
                             hint: const Text("رقم الطلب", style: TextStyle(fontSize: 13)),
                             items: [
@@ -495,7 +495,7 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: selectedLocation,
+                            initialValue: selectedLocation,
                             isExpanded: true,
                             hint: const Text("مكان العمل", style: TextStyle(fontSize: 13)),
                             items: [
@@ -518,7 +518,7 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: selectedJob,
+                            initialValue: selectedJob,
                             isExpanded: true,
                             hint: const Text("نوع العمل", style: TextStyle(fontSize: 13)),
                             items: [
@@ -537,7 +537,7 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: selectedMaterial,
+                            initialValue: selectedMaterial,
                             isExpanded: true,
                             hint: const Text("نوع الخامة", style: TextStyle(fontSize: 13)),
                             items: [
@@ -556,7 +556,7 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: selectedReportType,
+                            initialValue: selectedReportType,
                             isExpanded: true,
                             items: reportTypes.map((type) => DropdownMenuItem(value: type, child: Text(type, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)))).toList(),
                             onChanged: (val) => setState(() => selectedReportType = val!),

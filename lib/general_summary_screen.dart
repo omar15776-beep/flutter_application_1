@@ -213,7 +213,7 @@ class _GeneralSummaryScreenState extends State<GeneralSummaryScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), spreadRadius: 1, blurRadius: 3)],
+                  boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3)],
                   border: Border.all(color: Colors.grey.shade300),
                 ),
                 child: Row(

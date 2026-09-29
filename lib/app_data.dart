@@ -113,6 +113,6 @@ class AppData {
   }
 
   static int fontColorToInt(Color color) {
-    return color.value;
+    return color.toARGB32();
   }
 }

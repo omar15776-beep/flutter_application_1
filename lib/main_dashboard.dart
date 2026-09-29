@@ -54,7 +54,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), spreadRadius: 1, blurRadius: 3)],
+                  boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3)],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -74,7 +74,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                             ),
                           ),
                           Text(
-                            widget.currentUser != null ? "المستخدم: \({widget.currentUser!['username']} (\){widget.currentUser!['role']})" : "لوحة التحكم والتشغيل السريع",
+                            widget.currentUser != null ? "المستخدم: ({widget.currentUser!['username']} (){widget.currentUser!['role']})" : "لوحة التحكم والتشغيل السريع",
                             style: const TextStyle(fontSize: 11, color: Colors.grey),
                           ),
                         ],
@@ -228,7 +228,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: headerColor, width: 2),
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), spreadRadius: 1, blurRadius: 3)],
+        boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3)],
       ),
       child: Column(
         children: [

@@ -487,7 +487,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
                 onPressed: () async {
                   setState(() {
                     AppData.materials[selectedIndex!] = {
-                      "m": AppData.materials[selectedIndex!]!['m']!,
+                      "m": AppData.materials[selectedIndex!]['m']!,
                       "name": editName.text,
                       "sell": editSell.text,
                       "cost": editCost.text,
@@ -723,7 +723,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
             ElevatedButton(
               onPressed: () async {
                 setState(() {
-                  AppData.methods[selectedIndex!] = {"m": AppData.methods[selectedIndex!]!['m']!, "name": editName.text};
+                  AppData.methods[selectedIndex!] = {"m": AppData.methods[selectedIndex!]['m']!, "name": editName.text};
                 });
                 await AppData.saveData();
                 Navigator.pop(context);

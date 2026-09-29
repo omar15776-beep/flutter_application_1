@@ -146,7 +146,7 @@ class _ProfitOfferScreenState extends State<ProfitOfferScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), spreadRadius: 1, blurRadius: 3)],
+                  boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3)],
                 ),
                 child: Row(
                   children: [
@@ -191,7 +191,7 @@ class _ProfitOfferScreenState extends State<ProfitOfferScreen> {
                       child: SizedBox(
                         height: 36,
                         child: DropdownButtonFormField<String>(
-                          value: selectedLocation,
+                          initialValue: selectedLocation,
                           isExpanded: true,
                           hint: const Text("مكان العمل", style: TextStyle(fontSize: 11.5)),
                           items: [
@@ -208,7 +208,7 @@ class _ProfitOfferScreenState extends State<ProfitOfferScreen> {
                       child: SizedBox(
                         height: 36,
                         child: DropdownButtonFormField<String>(
-                          value: selectedDate,
+                          initialValue: selectedDate,
                           isExpanded: true,
                           hint: const Text("التاريخ", style: TextStyle(fontSize: 11.5)),
                           items: [
@@ -225,7 +225,7 @@ class _ProfitOfferScreenState extends State<ProfitOfferScreen> {
                       child: SizedBox(
                         height: 36,
                         child: DropdownButtonFormField<String>(
-                          value: selectedOrderNum,
+                          initialValue: selectedOrderNum,
                           isExpanded: true,
                           hint: const Text("رقم العرض", style: TextStyle(fontSize: 11.5)),
                           items: [
@@ -309,7 +309,7 @@ class _ProfitOfferScreenState extends State<ProfitOfferScreen> {
                                     double itemCost = area > 0 ? (area * unitCost) : (qty * unitCost);
                                     double rowProfit = itemSell - itemCost;
 
-                                    String qtyOrAreaStr = area > 0 ? "${_formatMoney(area)}م" : "${_formatMoney(qty)}";
+                                    String qtyOrAreaStr = area > 0 ? "${_formatMoney(area)}م" : _formatMoney(qty);
 
                                     List<String> rowValues = [
                                       "${index + 1}",

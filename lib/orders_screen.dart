@@ -383,7 +383,7 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), spreadRadius: 1, blurRadius: 3)],
+                  boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3)],
                 ),
                 child: Wrap(
                   spacing: 15,
@@ -485,7 +485,7 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
                             child: SizedBox(
                               height: 32,
                               child: DropdownButtonFormField<String>(
-                                value: paymentType,
+                                initialValue: paymentType,
                                 isExpanded: true,
                                 items: ["نقدي", "تحويل بنكي", "شيك", "أخرى"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 11)))).toList(),
                                 onChanged: (val) => setState(() => paymentType = val!),

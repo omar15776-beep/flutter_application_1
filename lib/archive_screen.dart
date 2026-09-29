@@ -289,7 +289,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
             if (item is Map) {
               // تحويل آمن لـ Map
               
-              final convertedItem = Map.from(item as Map).map((k, v) => MapEntry(k.toString(), v));
+              final convertedItem = Map.from(item).map((k, v) => MapEntry(k.toString(), v));
               if (convertedItem['archive_source'] == 'طلب') {
                 AppData.savedOrders.add(convertedItem);
               } else {
@@ -366,7 +366,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), spreadRadius: 1, blurRadius: 3)],
+                  boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3)],
                 ),
                 child: Column(
                   children: [
@@ -405,7 +405,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                         Expanded(
                           flex: 1,
                           child: DropdownButtonFormField<String>(
-                            value: archiveTypeFilter,
+                            initialValue: archiveTypeFilter,
                             items: const [
                               DropdownMenuItem(value: "الكل", child: Text("كل الأرشيف")),
                               DropdownMenuItem(value: "الطلبات", child: Text("الطلبات فقط")),
