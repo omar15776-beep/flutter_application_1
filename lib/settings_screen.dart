@@ -278,7 +278,7 @@ class _SettingsScreenState extends State {
                         children: [
                           Expanded(
                             child: DropdownButtonFormField(
-                              value: selectedFontFamily,
+                              initialValue: selectedFontFamily,
                               items: const [
                                 DropdownMenuItem(value: "Cairo", child: Text("خط Cairo")),
                                 DropdownMenuItem(value: "Roboto", child: Text("خط Roboto")),
@@ -291,7 +291,7 @@ class _SettingsScreenState extends State {
                           const SizedBox(width: 20),
                           Expanded(
                             child: DropdownButtonFormField(
-                              value: fontColor,
+                              initialValue: fontColor,
                               items: const [
                                 DropdownMenuItem(value: Color(0xFF0F172A), child: Text("أسود داكن (افتراضي)")),
                                 DropdownMenuItem(value: Color(0xFF2563EB), child: Text("أزرق")),
@@ -420,7 +420,7 @@ class _SettingsScreenState extends State {
                           const SizedBox(width: 12),
                           Expanded(
                             child: DropdownButtonFormField(
-                              value: selectedRole,
+                              initialValue: selectedRole,
                               items: const [
                                 DropdownMenuItem(value: "مدير أساسي", child: Text("مدير أساسي (تحكم كامل)")),
                                 DropdownMenuItem(value: "موظف", child: Text("موظف (تخصيص الصلاحيات)")),
@@ -479,7 +479,7 @@ class _SettingsScreenState extends State {
                                   final user = AppData.users[index];
                                   return ListTile(
                                     dense: true,
-                                    title: Text("المستخدم: \({user['username']} (\){user['role']})"),
+                                    title: Text("المستخدم: ({user['username']} (){user['role']})"),
                                     trailing: IconButton(
                                       icon: const Icon(Icons.delete, color: Colors.red, size: 18),
                                       onPressed: () async {
