@@ -17,7 +17,7 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController paidController = TextEditingController(text: "0");
   
-  String paymentType = "نقدي";
+  String paymentType = "";
   String orderNum = "1";
   String currentDate = "2026-09-14";
   int? selectedSavedIndex;
@@ -26,6 +26,11 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
   @override
   void initState() {
     super.initState();
+    if (AppData.methods.isNotEmpty) {
+      paymentType = AppData.methods[0]['name'] ?? "نقدي";
+    } else {
+      paymentType = "نقدي";
+    }
     _normalizeAndAssignOrderNumbers();
     _updateOrderNumber();
   }
@@ -214,7 +219,6 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم حذف السطر وتحديث الحفظ الدائم")));
   }
 
-  // دالة إدارة الصور المتوافقة تماماً مع المتصفح والمنصات عبر الـ Base64
   void _showImagesDialog(int index) {
     final row = measurementRows[index];
     List<String> images = List<String>.from(row['images']);
@@ -238,7 +242,7 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
                           FilePickerResult? result = await FilePicker.platform.pickFiles(
                             type: FileType.image,
                             allowMultiple: true,
-                            withData: true, // ضروري جداً لقراءة الـ bytes عبر المتصفح
+                            withData: true,
                           );
                           if (result != null) {
                             setDialogState(() {
@@ -265,7 +269,6 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
                                 itemCount: images.length,
                                 itemBuilder: (context, imgIdx) {
                                   String imgData = images[imgIdx];
-
                                   return Card(
                                     margin: const EdgeInsets.symmetric(vertical: 4),
                                     child: ListTile(
@@ -485,11 +488,26 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
                             child: SizedBox(
                               height: 32,
                               child: DropdownButtonFormField<String>(
-                                initialValue: paymentType,
+                                value: AppData.methods.any((m) => m['name'] == paymentType)
+                                    ? paymentType
+                                    : (AppData.methods.isNotEmpty ? AppData.methods[0]['name'] : null),
                                 isExpanded: true,
-                                items: ["نقدي", "تحويل بنكي", "شيك", "أخرى"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 11)))).toList(),
-                                onChanged: (val) => setState(() => paymentType = val!),
-                                decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
+                                items: AppData.methods.map<DropdownMenuItem<String>>((methodMap) {
+                                  String methodName = methodMap['name'] ?? '';
+                                  return DropdownMenuItem<String>(
+                                    value: methodName,
+                                    child: Text(methodName, style: const TextStyle(fontSize: 11)),
+                                  );
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setState(() => paymentType = val);
+                                  }
+                                },
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(), 
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                ),
                               ),
                             ),
                           ),

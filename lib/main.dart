@@ -1,25 +1,30 @@
 import 'package:flutter/material.dart';
 import 'app_data.dart';
+import 'login_screen.dart';
 import 'main_dashboard.dart';
-import 'login_screen.dart'; // سننشئها أو نتحقق منها
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // تحميل البيانات المحفوظة للتأكد من وجود مستخدمين أم لا
   await AppData.loadData();
-  runApp(const MyApp());
+  
+  // فحص ما إذا كان هناك مستخدمون بكلمات مرور مسجلة
+  bool hasUsers = AppData.users.isNotEmpty;
+
+  runApp(MyApp(hasUsers: hasUsers));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool hasUsers;
+  const MyApp({super.key, required this.hasUsers});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'المؤسسة التجارية',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      // إذا كان هناك مستخدمون مسجلون، ابدأ بشاشة تسجيل الدخول، وإلا توجه للوحة التحكم مباشرة
-      home: AppData.users.isNotEmpty ? const LoginScreen() : const MainDashboardScreen(),
+      title: 'تطبيق الشركة',
+      // إذا كانت قائمة المستخدمين فارغة، افتح اللوحة الرئيسية مباشرة، وإذا وجد مستخدمون اذهب لشاشة تسجيل الدخول
+      home: hasUsers ? const LoginScreen() : const MainDashboardScreen(),
     );
   }
 }

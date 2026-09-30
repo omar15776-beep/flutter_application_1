@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_data.dart';
+import 'login_screen.dart';
 import 'orders_screen.dart';
 import 'quotations_screen.dart';
 import 'clients_report_screen.dart';
@@ -14,7 +15,7 @@ import 'general_summary_screen.dart';
 import 'search_options_screen.dart';
 import 'lists_and_management_screen.dart';
 import 'settings_screen.dart';
-import 'archive_screen.dart'; // 👈 استيراد شاشة الأرشيف الجديدة
+import 'archive_screen.dart';
 import 'dart:convert';
 
 class MainDashboardScreen extends StatefulWidget {
@@ -46,7 +47,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0),
           child: Column(
             children: [
               Container(
@@ -59,7 +60,6 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // إظهار أو إخفاء اسم المؤسسة بناءً على إعدادات النظام
                     if (AppData.showCompanyName) ...[
                       Column(
                         children: [
@@ -74,15 +74,13 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                             ),
                           ),
                           Text(
-                            widget.currentUser != null ? "المستخدم: ({widget.currentUser!['username']} (){widget.currentUser!['role']})" : "لوحة التحكم والتشغيل السريع",
+                            widget.currentUser != null ? "المستخدم: ${widget.currentUser!['username']} (${widget.currentUser!['role']})" : "لوحة التحكم والتشغيل السريع",
                             style: const TextStyle(fontSize: 11, color: Colors.grey),
                           ),
                         ],
                       ),
                       const SizedBox(width: 15),
                     ],
-                    
-                    // إظهار أو إخفاء شعار الشركة (اللوجو) بناءً على إعدادات النظام
                     if (AppData.showCompanyLogo) ...[
                       AppData.companyLogoPath != null && AppData.companyLogoPath!.isNotEmpty
                           ? ClipRRect(
@@ -102,99 +100,115 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 15),
+              
+              // 📱 جعل الأقسام قابلة للتمرير أفقياً وعمودياً معاً لتناسب الموبايل والشاشات المختلفة
               Expanded(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildDashboardCard(
-                        title: "البيانات الجديدة",
-                        headerColor: const Color(0xFF2563EB),
-                        buttons: [
-                          if (_hasPermission('ordersEntry'))
-                            _buildMenuButton("إدخال البيانات", Icons.edit_note, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const OrdersEntryScreen()));
-                            }),
-                          if (_hasPermission('clientsReport'))
-                            _buildMenuButton("تقرير العملاء", Icons.people_outline, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const ClientsReportScreen()));
-                            }),
-                          if (_hasPermission('database'))
-                            _buildMenuButton("قاعدة البيانات", Icons.table_chart, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const DatabaseScreen()));
-                            }),
-                          if (_hasPermission('statement'))
-                            _buildMenuButton("كشف حساب", Icons.receipt_long, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const StatementScreen()));
-                            }),
-                          if (_hasPermission('profit'))
-                            _buildMenuButton("الأرباح", Icons.account_balance_wallet, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfitScreen()));
-                            }),
-                        ],
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.vertical, // 👈 التمرير لفوق ولتحت
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal, // 👈 التمرير ليمين ويسار
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 950), // عرض كافي للاستيعاب المريح
+                      child: SizedBox(
+                        height: 520, // ارتفاع ثابت ومناسب لبطاقات الأقسام
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 310,
+                              child: _buildDashboardCard(
+                                title: "البيانات الجديدة",
+                                headerColor: const Color(0xFF2563EB),
+                                buttons: [
+                                  if (_hasPermission('ordersEntry'))
+                                    _buildMenuButton("إدخال البيانات", Icons.edit_note, () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const OrdersEntryScreen()));
+                                    }),
+                                  if (_hasPermission('clientsReport'))
+                                    _buildMenuButton("تقرير العملاء", Icons.people_outline, () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const ClientsReportScreen()));
+                                    }),
+                                  if (_hasPermission('database'))
+                                    _buildMenuButton("قاعدة البيانات", Icons.table_chart, () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const DatabaseScreen()));
+                                    }),
+                                  if (_hasPermission('statement'))
+                                    _buildMenuButton("كشف حساب", Icons.receipt_long, () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const StatementScreen()));
+                                    }),
+                                  if (_hasPermission('profit'))
+                                    _buildMenuButton("الأرباح", Icons.account_balance_wallet, () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfitScreen()));
+                                    }),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 15),
+                            SizedBox(
+                              width: 310,
+                              child: _buildDashboardCard(
+                                title: "القوائم والبحث",
+                                headerColor: const Color(0xFFD97706),
+                                buttons: [
+                                  if (_hasPermission('lists'))
+                                    _buildMenuButton("القوائم والأسعار", Icons.list_alt, () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const ClientsScreen()));
+                                    }),
+                                  if (_hasPermission('settings'))
+                                    _buildMenuButton("إعدادات النظام والشركة", Icons.settings, () async {
+                                      await Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+                                      setState(() {});
+                                    }),
+                                  if (_hasPermission('generalSummary'))
+                                    _buildMenuButton("الملخص العام", Icons.fact_check, () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const GeneralSummaryScreen()));
+                                    }),
+                                  if (_hasPermission('searchOptions'))
+                                    _buildMenuButton("البحث المتعدد", Icons.search, () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const SearchOptionsScreen()));
+                                    }),
+                                  if (_hasPermission('archive'))
+                                    _buildMenuButton("استعراض الأرشيف", Icons.archive, () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const ArchiveScreen()));
+                                    }),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 15),
+                            SizedBox(
+                              width: 310,
+                              child: _buildDashboardCard(
+                                title: "عروض الأسعار",
+                                headerColor: const Color(0xFF334155),
+                                buttons: [
+                                  if (_hasPermission('quotationsEntry'))
+                                    _buildMenuButton("إدخال بيانات (العرض)", Icons.local_offer, () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const QuotationsEntryScreen()));
+                                    }),
+                                  if (_hasPermission('quotationsClients'))
+                                    _buildMenuButton("تقرير العملاء (العرض)", Icons.analytics_outlined, () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const ClientsOfferReportScreen()));
+                                    }),
+                                  if (_hasPermission('quotationsDatabase'))
+                                    _buildMenuButton("قاعدة بيانات (العروض)", Icons.storage, () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const DatabaseOfferScreen()));
+                                    }),
+                                  if (_hasPermission('quotationsStatement'))
+                                    _buildMenuButton("كشف حساب (العرض)", Icons.receipt, () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const StatementOfferScreen()));
+                                    }),
+                                  if (_hasPermission('quotationsProfit'))
+                                    _buildMenuButton("الارباح (العرض)", Icons.trending_up, () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfitOfferScreen()));
+                                    }),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: _buildDashboardCard(
-                        title: "القوائم والبحث",
-                        headerColor: const Color(0xFFD97706),
-                        buttons: [
-                          if (_hasPermission('lists'))
-                            _buildMenuButton("القوائم والأسعار", Icons.list_alt, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const ClientsScreen()));
-                            }),
-                          if (_hasPermission('settings'))
-                            _buildMenuButton("إعدادات النظام والشركة", Icons.settings, () async {
-                              await Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
-                              setState(() {});
-                            }),
-                          if (_hasPermission('generalSummary'))
-                            _buildMenuButton("الملخص العام", Icons.fact_check, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const GeneralSummaryScreen()));
-                            }),
-                          if (_hasPermission('searchOptions'))
-                            _buildMenuButton("البحث المتعدد", Icons.search, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const SearchOptionsScreen()));
-                            }),
-                          if (_hasPermission('archive'))
-                            _buildMenuButton("استعراض الأرشيف", Icons.archive, () {
-                              // 👈 ربط زر استعراض الأرشيف لينتقل إلى شاشة الأرشيف
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const ArchiveScreen()));
-                            }),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: _buildDashboardCard(
-                        title: "عروض الأسعار",
-                        headerColor: const Color(0xFF334155),
-                        buttons: [
-                          if (_hasPermission('quotationsEntry'))
-                            _buildMenuButton("إدخال بيانات (العرض)", Icons.local_offer, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const QuotationsEntryScreen()));
-                            }),
-                          if (_hasPermission('quotationsClients'))
-                            _buildMenuButton("تقرير العملاء (العرض)", Icons.analytics_outlined, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const ClientsOfferReportScreen()));
-                            }),
-                          if (_hasPermission('quotationsDatabase'))
-                            _buildMenuButton("قاعدة بيانات (العروض)", Icons.storage, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const DatabaseOfferScreen()));
-                            }),
-                          if (_hasPermission('quotationsStatement'))
-                            _buildMenuButton("كشف حساب (العرض)", Icons.receipt, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const StatementOfferScreen()));
-                            }),
-                          if (_hasPermission('quotationsProfit'))
-                            _buildMenuButton("الارباح (العرض)", Icons.trending_up, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfitOfferScreen()));
-                            }),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(height: 10),

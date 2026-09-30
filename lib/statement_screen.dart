@@ -521,14 +521,14 @@ class _StatementScreenState extends State<StatementScreen> {
           theme: pw.ThemeData.withFont(base: font, bold: fontBold),
           build: (pw.Context context) {
             return [
-              if (pdfShowCompanyName || (pdfShowLogo && logoImage != null))
+              if ((pdfShowCompanyName && AppData.companyName.trim().isNotEmpty && !AppData.companyName.contains("المؤسسة التجارية")) || (pdfShowLogo && logoImage != null))
                 pw.Center(
                   child: pw.Row(
                     mainAxisSize: pw.MainAxisSize.min,
                     mainAxisAlignment: pw.MainAxisAlignment.center,
                     crossAxisAlignment: pw.CrossAxisAlignment.center,
                     children: [
-                      if (pdfShowCompanyName)
+                      if (pdfShowCompanyName && AppData.companyName.trim().isNotEmpty && !AppData.companyName.contains("المؤسسة التجارية"))
                         pw.Text(
                           AppData.companyName,
                           style: pw.TextStyle(
@@ -538,7 +538,7 @@ class _StatementScreenState extends State<StatementScreen> {
                             color: pw.PdfColor.fromInt(pdfCompanyNameColor.toARGB32()),
                           ),
                         ),
-                      if (pdfShowCompanyName && pdfShowLogo && logoImage != null)
+                      if (pdfShowCompanyName && AppData.companyName.trim().isNotEmpty && !AppData.companyName.contains("المؤسسة التجارية") && pdfShowLogo && logoImage != null)
                         pw.SizedBox(width: 12),
                       if (pdfShowLogo && logoImage != null)
                         pw.Container(
