@@ -13,10 +13,27 @@ class GeneralSummaryScreen extends StatefulWidget {
 
 class _GeneralSummaryScreenState extends State<GeneralSummaryScreen> {
   final ScrollController _horizontalScrollController = ScrollController();
+  final ScrollController _headerScrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _horizontalScrollController.addListener(() {
+      if (_headerScrollController.hasClients && _headerScrollController.offset != _horizontalScrollController.offset) {
+        _headerScrollController.jumpTo(_horizontalScrollController.offset);
+      }
+    });
+    _headerScrollController.addListener(() {
+      if (_horizontalScrollController.hasClients && _horizontalScrollController.offset != _headerScrollController.offset) {
+        _horizontalScrollController.jumpTo(_horizontalScrollController.offset);
+      }
+    });
+  }
 
   @override
   void dispose() {
     _horizontalScrollController.dispose();
+    _headerScrollController.dispose();
     super.dispose();
   }
 
@@ -68,6 +85,7 @@ class _GeneralSummaryScreenState extends State<GeneralSummaryScreen> {
   void _exportGeneralSummaryPdf() async {
     List<Map<String, dynamic>> summaryData = _getSummarizedClients();
     if (summaryData.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("لا توجد بيانات لتصديرها إلى PDF")));
       return;
     }
@@ -141,6 +159,7 @@ class _GeneralSummaryScreenState extends State<GeneralSummaryScreen> {
         ),
       );
 
+      if (!mounted) return;
       await Navigator.push(
         context,
         MaterialPageRoute(
@@ -161,6 +180,7 @@ class _GeneralSummaryScreenState extends State<GeneralSummaryScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("حدث خطأ أثناء تصدير PDF: $e")));
     }
   }
@@ -205,119 +225,127 @@ class _GeneralSummaryScreenState extends State<GeneralSummaryScreen> {
         textDirection: TextDirection.rtl,
         child: Padding(
           padding: const EdgeInsets.all(12.0),
-          child: Column(
-            children: [
-              // بطاقات الإجماليات العلوية بخطوط كبرة وواضحة
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3)],
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildSummaryCard("إجمالي حساب العملاء:", "${_formatMoney(grandTotal)} ج.م", Colors.blue.shade700),
-                    _buildSummaryCard("إجمالي المدفوعات:", "${_formatMoney(grandPaid)} ج.م", Colors.green.shade700),
-                    _buildSummaryCard("إجمالي الباقي:", "${_formatMoney(grandRemaining)} ج.م", Colors.red.shade700),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              // جدول الملخص العام
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300),
+          // 📱 تفعيل التمرير العمودي الشامل للصفحة لتناسب الموبايل والشاشات الصغيرة
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.88,
+              child: Column(
+                children: [
+                  // بطاقات الإجماليات العلوية بخطوط كبيرة وواضحة
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3)],
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildSummaryCard("إجمالي حساب العملاء:", "${_formatMoney(grandTotal)} ج.م", Colors.blue.shade700),
+                        _buildSummaryCard("إجمالي المدفوعات:", "${_formatMoney(grandPaid)} ج.م", Colors.green.shade700),
+                        _buildSummaryCard("إجمالي الباقي:", "${_formatMoney(grandRemaining)} ج.م", Colors.red.shade700),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // رأس الأعمدة الثابت بخط كبير وواضح
-                      Container(
-                        color: const Color(0xFF0F172A),
-                        child: SingleChildScrollView(
-                          controller: ScrollController(),
-                          scrollDirection: Axis.horizontal,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(minWidth: tableMinWidth),
-                            child: Row(
-                              children: const [
-                                SizedBox(width: 90, child: Padding(padding: EdgeInsets.all(12.0), child: Text("الكود", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)))),
-                                SizedBox(width: 300, child: Padding(padding: EdgeInsets.all(12.0), child: Text("اسم العميل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)))),
-                                SizedBox(width: 200, child: Padding(padding: EdgeInsets.all(12.0), child: Text("الحساب", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)))),
-                                SizedBox(width: 200, child: Padding(padding: EdgeInsets.all(12.0), child: Text("المدفوع", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)))),
-                                SizedBox(width: 200, child: Padding(padding: EdgeInsets.all(12.0), child: Text("الباقي", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)))),
-                              ],
-                            ),
-                          ),
-                        ),
+                  const SizedBox(height: 12),
+                  // جدول الملخص العام
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade300),
                       ),
-                      // محتوى البيانات بخطوط كبيرة وواضحة
-                      Expanded(
-                        child: Scrollbar(
-                          controller: _horizontalScrollController,
-                          thumbVisibility: true,
-                          trackVisibility: true,
-                          child: SingleChildScrollView(
-                            controller: _horizontalScrollController,
-                            scrollDirection: Axis.horizontal,
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(minWidth: tableMinWidth),
-                              child: SizedBox(
-                                width: tableMinWidth,
-                                child: ListView.builder(
-                                  itemCount: summaryData.length,
-                                  itemBuilder: (context, index) {
-                                    final item = summaryData[index];
-                                    return Container(
-                                      decoration: BoxDecoration(
-                                        color: index % 2 == 0 ? Colors.white : Colors.grey.shade50,
-                                        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
-                                      child: Row(
-                                        children: [
-                                          SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(10.0), child: Text("${index + 1}", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)))),
-                                          SizedBox(width: 300, child: Padding(padding: const EdgeInsets.all(10.0), child: Text("${item['client']}", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)))),
-                                          SizedBox(width: 200, child: Padding(padding: const EdgeInsets.all(10.0), child: Text(_formatMoney(item['total']), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blue)))),
-                                          SizedBox(width: 200, child: Padding(padding: const EdgeInsets.all(10.0), child: Text(_formatMoney(item['paid']), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.green)))),
-                                          SizedBox(width: 200, child: Padding(padding: const EdgeInsets.all(10.0), child: Text(_formatMoney(item['remaining']), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.red)))),
-                                        ],
-                                      ),
-                                    );
-                                  },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // رأس الأعمدة الثابت بخط كبير وواضح
+                          Container(
+                            color: const Color(0xFF0F172A),
+                            child: SingleChildScrollView(
+                              controller: _headerScrollController,
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(minWidth: tableMinWidth),
+                                child: Row(
+                                  children: const [
+                                    SizedBox(width: 90, child: Padding(padding: EdgeInsets.all(12.0), child: Text("الكود", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)))),
+                                    SizedBox(width: 300, child: Padding(padding: EdgeInsets.all(12.0), child: Text("اسم العميل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)))),
+                                    SizedBox(width: 200, child: Padding(padding: EdgeInsets.all(12.0), child: Text("الحساب", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)))),
+                                    SizedBox(width: 200, child: Padding(padding: EdgeInsets.all(12.0), child: Text("المدفوع", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)))),
+                                    SizedBox(width: 200, child: Padding(padding: EdgeInsets.all(12.0), child: Text("الباقي", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)))),
+                                  ],
                                 ),
                               ),
                             ),
                           ),
-                        ),
+                          // محتوى البيانات بخطوط كبيرة وواضحة
+                          Expanded(
+                            child: Scrollbar(
+                              controller: _horizontalScrollController,
+                              thumbVisibility: true,
+                              trackVisibility: true,
+                              child: SingleChildScrollView(
+                                controller: _horizontalScrollController,
+                                scrollDirection: Axis.horizontal,
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(minWidth: tableMinWidth),
+                                  child: SizedBox(
+                                    width: tableMinWidth,
+                                    child: ListView.builder(
+                                      itemCount: summaryData.length,
+                                      itemBuilder: (context, index) {
+                                        final item = summaryData[index];
+                                        return Container(
+                                          decoration: BoxDecoration(
+                                            color: index % 2 == 0 ? Colors.white : Colors.grey.shade50,
+                                            border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
+                                          child: Row(
+                                            children: [
+                                              SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(10.0), child: Text("${index + 1}", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)))),
+                                              SizedBox(width: 300, child: Padding(padding: const EdgeInsets.all(10.0), child: Text("${item['client']}", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)))),
+                                              SizedBox(width: 200, child: Padding(padding: const EdgeInsets.all(10.0), child: Text(_formatMoney(item['total']), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blue)))),
+                                              SizedBox(width: 200, child: Padding(padding: const EdgeInsets.all(10.0), child: Text(_formatMoney(item['paid']), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.green)))),
+                                              SizedBox(width: 200, child: Padding(padding: const EdgeInsets.all(10.0), child: Text(_formatMoney(item['remaining']), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.red)))),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  // شريط سفلي لعدد العملاء بخط كبير
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F172A),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text("إجمالي عدد العملاء: ${summaryData.length}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              // شريط السفلي لعدد العملاء بخط كبير
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F172A),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text("إجمالي عدد العملاء: ${summaryData.length}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

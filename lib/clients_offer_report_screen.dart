@@ -22,10 +22,27 @@ class _ClientsOfferReportScreenState extends State<ClientsOfferReportScreen> {
   int? selectedRowIndex;
 
   final ScrollController _horizontalScrollController = ScrollController();
+  final ScrollController _headerScrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _horizontalScrollController.addListener(() {
+      if (_headerScrollController.hasClients && _headerScrollController.offset != _horizontalScrollController.offset) {
+        _headerScrollController.jumpTo(_horizontalScrollController.offset);
+      }
+    });
+    _headerScrollController.addListener(() {
+      if (_horizontalScrollController.hasClients && _horizontalScrollController.offset != _headerScrollController.offset) {
+        _horizontalScrollController.jumpTo(_horizontalScrollController.offset);
+      }
+    });
+  }
 
   @override
   void dispose() {
     _horizontalScrollController.dispose();
+    _headerScrollController.dispose();
     super.dispose();
   }
 
@@ -38,7 +55,6 @@ class _ClientsOfferReportScreenState extends State<ClientsOfferReportScreen> {
     return segments.join('.');
   }
 
-  // دالة عرض الصور المتوافقة مع المتصفح والـ Base64
   void _showImageDialog(Map<String, dynamic> item) {
     List images = item['images'] ?? [];
     showDialog(
@@ -121,6 +137,7 @@ class _ClientsOfferReportScreenState extends State<ClientsOfferReportScreen> {
                                         item['images'] = images;
                                         await AppData.saveData();
                                         setState(() {});
+                                        if (!mounted) return;
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           const SnackBar(content: Text("تم حذف الصورة بنجاح من أرشيف البند"))
                                         );
@@ -154,6 +171,7 @@ class _ClientsOfferReportScreenState extends State<ClientsOfferReportScreen> {
       selectedRowIndex = null;
     });
     await AppData.saveData();
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم حذف البند بنجاح")));
   }
 
@@ -269,6 +287,7 @@ class _ClientsOfferReportScreenState extends State<ClientsOfferReportScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("حدث خطأ أثناء تصدير PDF: $e")));
     }
   }
@@ -521,6 +540,7 @@ class _ClientsOfferReportScreenState extends State<ClientsOfferReportScreen> {
 
                       await AppData.saveData();
                       setState(() {});
+                      if (!context.mounted) return;
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(isEdit ? "تم تعديل البند بنجاح" : "تم إضافة البند بنجاح"))
@@ -590,300 +610,308 @@ class _ClientsOfferReportScreenState extends State<ClientsOfferReportScreen> {
         textDirection: TextDirection.rtl,
         child: Padding(
           padding: const EdgeInsets.all(12.0),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3)],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Column(
+          // 📱 تفعيل التمرير العمودي الشامل للصفحة لتناسب الموبايل وتمنع أي تداخل
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.88,
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3)],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(
-                              width: 240,
-                              child: Autocomplete<String>(
-                                optionsBuilder: (TextEditingValue textEditingValue) {
-                                  if (textEditingValue.text.isEmpty) {
-                                    return allClients;
-                                  }
-                                  return allClients.where((c) => c.contains(textEditingValue.text));
-                                },
-                                onSelected: (String selection) {
-                                  setState(() {
-                                    selectedClient = selection;
-                                    selectedLocation = null;
-                                    selectedOrderNum = null;
-                                  });
-                                },
-                                fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                                  if (controller.text.isEmpty && selectedClient != null) {
-                                    controller.text = selectedClient!;
-                                  }
-                                  return TextField(
-                                    controller: controller,
-                                    focusNode: focusNode,
-                                    decoration: const InputDecoration(
-                                      labelText: "اسم العميل",
-                                      border: OutlineInputBorder(),
-                                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                                    ),
-                                    style: const TextStyle(fontSize: 11),
-                                    onChanged: (val) {
+                            Row(
+                              children: [
+                                SizedBox(
+                                  width: 240,
+                                  child: Autocomplete<String>(
+                                    optionsBuilder: (TextEditingValue textEditingValue) {
+                                      if (textEditingValue.text.isEmpty) {
+                                        return allClients;
+                                      }
+                                      return allClients.where((c) => c.contains(textEditingValue.text));
+                                    },
+                                    onSelected: (String selection) {
                                       setState(() {
-                                        selectedClient = val.isEmpty ? null : val;
+                                        selectedClient = selection;
                                         selectedLocation = null;
                                         selectedOrderNum = null;
                                       });
                                     },
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            SizedBox(
-                              width: 140,
-                              child: DropdownButtonFormField<String>(
-                                initialValue: selectedDateFrom,
-                                isExpanded: true,
-                                hint: const Text("بداية التاريخ", style: TextStyle(fontSize: 11)),
-                                items: [
-                                  const DropdownMenuItem(value: "", child: Text("الكل", style: TextStyle(fontSize: 11))),
-                                  ...datesList.map((d) => DropdownMenuItem(value: d, child: Text(d, style: TextStyle(fontSize: 11)))),
-                                ],
-                                onChanged: (val) => setState(() => selectedDateFrom = val),
-                                decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            SizedBox(
-                              width: 130,
-                              child: DropdownButtonFormField<String>(
-                                initialValue: selectedOrderNum,
-                                isExpanded: true,
-                                hint: const Text("رقم العرض", style: TextStyle(fontSize: 11)),
-                                items: [
-                                  const DropdownMenuItem(value: "", child: Text("الكل", style: TextStyle(fontSize: 11))),
-                                  ...orderNumbers.map((ord) => DropdownMenuItem(value: ord, child: Text(ord, style: TextStyle(fontSize: 11)))),
-                                ],
-                                onChanged: (val) => setState(() => selectedOrderNum = val),
-                                decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: 240,
-                              child: DropdownButtonFormField<String>(
-                                initialValue: selectedLocation,
-                                isExpanded: true,
-                                hint: const Text("مكان العمل", style: TextStyle(fontSize: 11)),
-                                items: [
-                                  const DropdownMenuItem(value: "", child: Text("كل الأماكن", style: TextStyle(fontSize: 11))),
-                                  ...locationsList.map((l) => DropdownMenuItem(value: l, child: Text(l, style: TextStyle(fontSize: 11)))),
-                                ],
-                                onChanged: (val) => setState(() => selectedLocation = val),
-                                decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            SizedBox(
-                              width: 140,
-                              child: DropdownButtonFormField<String>(
-                                initialValue: selectedDateTo,
-                                isExpanded: true,
-                                hint: const Text("نهاية التاريخ", style: TextStyle(fontSize: 11)),
-                                items: [
-                                  const DropdownMenuItem(value: "", child: Text("الكل", style: TextStyle(fontSize: 11))),
-                                  ...datesList.map((d) => DropdownMenuItem(value: d, child: Text(d, style: TextStyle(fontSize: 11)))),
-                                ],
-                                onChanged: (val) => setState(() => selectedDateTo = val),
-                                decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: _showAddDialog,
-                          icon: const Icon(Icons.add, size: 16),
-                          label: const Text("إضافة بند"),
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: _editSelectedRow,
-                          icon: const Icon(Icons.edit, size: 16),
-                          label: const Text("تعديل بند"),
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: _deleteSelectedRow,
-                          icon: const Icon(Icons.delete, size: 16),
-                          label: const Text("حذف بند"),
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            if (selectedRowIndex == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("حدد صفاً أولاً لعرض صوره")));
-                              return;
-                            }
-                            _showImageDialog(filteredList[selectedRowIndex!]);
-                          },
-                          icon: const Icon(Icons.image, size: 16),
-                          label: const Text("عرض الصورة"),
-                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD97706), foregroundColor: Colors.white),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: _exportToPdf,
-                          icon: const Icon(Icons.picture_as_pdf, size: 16),
-                          label: const Text("PDF"),
-                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Container(
-                        color: const Color(0xFF581C87),
-                        child: SingleChildScrollView(
-                          controller: ScrollController(),
-                          scrollDirection: Axis.horizontal,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(minWidth: 1540),
-                            child: Row(
-                              children: const [
-                                SizedBox(width: 70, child: Padding(padding: EdgeInsets.all(10.0), child: Text("الصورة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                SizedBox(width: 75, child: Padding(padding: EdgeInsets.all(10.0), child: Text("رقم العرض", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                SizedBox(width: 65, child: Padding(padding: EdgeInsets.all(10.0), child: Text("الكود", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                SizedBox(width: 135, child: Padding(padding: EdgeInsets.all(10.0), child: Text("اسم العميل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                SizedBox(width: 95, child: Padding(padding: EdgeInsets.all(10.0), child: Text("مكان العمل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                SizedBox(width: 145, child: Padding(padding: EdgeInsets.all(10.0), child: Text("نوع العمل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                SizedBox(width: 175, child: Padding(padding: EdgeInsets.all(10.0), child: Text("الخامة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                SizedBox(width: 50, child: Padding(padding: EdgeInsets.all(10.0), child: Text("العدد", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                SizedBox(width: 50, child: Padding(padding: EdgeInsets.all(10.0), child: Text("الطول", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                SizedBox(width: 60, child: Padding(padding: EdgeInsets.all(10.0), child: Text("العرض", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                SizedBox(width: 70, child: Padding(padding: EdgeInsets.all(10.0), child: Text("المساحة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                SizedBox(width: 80, child: Padding(padding: EdgeInsets.all(10.0), child: Text("سعر البيع", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                SizedBox(width: 90, child: Padding(padding: EdgeInsets.all(10.0), child: Text("التاريخ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                SizedBox(width: 95, child: Padding(padding: EdgeInsets.all(10.0), child: Text("إجمالي العرض", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                                      if (controller.text.isEmpty && selectedClient != null) {
+                                        controller.text = selectedClient!;
+                                      }
+                                      return TextField(
+                                        controller: controller,
+                                        focusNode: focusNode,
+                                        decoration: const InputDecoration(
+                                          labelText: "اسم العميل",
+                                          border: OutlineInputBorder(),
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                        ),
+                                        style: const TextStyle(fontSize: 11),
+                                        onChanged: (val) {
+                                          setState(() {
+                                            selectedClient = val.isEmpty ? null : val;
+                                            selectedLocation = null;
+                                            selectedOrderNum = null;
+                                          });
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                SizedBox(
+                                  width: 140,
+                                  child: DropdownButtonFormField<String>(
+                                    initialValue: selectedDateFrom,
+                                    isExpanded: true,
+                                    hint: const Text("بداية التاريخ", style: TextStyle(fontSize: 11)),
+                                    items: [
+                                      const DropdownMenuItem(value: "", child: Text("الكل", style: TextStyle(fontSize: 11))),
+                                      ...datesList.map((d) => DropdownMenuItem(value: d, child: Text(d, style: TextStyle(fontSize: 11)))),
+                                    ],
+                                    onChanged: (val) => setState(() => selectedDateFrom = val),
+                                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                SizedBox(
+                                  width: 130,
+                                  child: DropdownButtonFormField<String>(
+                                    initialValue: selectedOrderNum,
+                                    isExpanded: true,
+                                    hint: const Text("رقم العرض", style: TextStyle(fontSize: 11)),
+                                    items: [
+                                      const DropdownMenuItem(value: "", child: Text("الكل", style: TextStyle(fontSize: 11))),
+                                      ...orderNumbers.map((ord) => DropdownMenuItem(value: ord, child: Text(ord, style: TextStyle(fontSize: 11)))),
+                                    ],
+                                    onChanged: (val) => setState(() => selectedOrderNum = val),
+                                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
+                                  ),
+                                ),
                               ],
                             ),
-                          ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                SizedBox(
+                                  width: 240,
+                                  child: DropdownButtonFormField<String>(
+                                    initialValue: selectedLocation,
+                                    isExpanded: true,
+                                    hint: const Text("مكان العمل", style: TextStyle(fontSize: 11)),
+                                    items: [
+                                      const DropdownMenuItem(value: "", child: Text("كل الأماكن", style: TextStyle(fontSize: 11))),
+                                      ...locationsList.map((l) => DropdownMenuItem(value: l, child: Text(l, style: TextStyle(fontSize: 11)))),
+                                    ],
+                                    onChanged: (val) => setState(() => selectedLocation = val),
+                                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                SizedBox(
+                                  width: 140,
+                                  child: DropdownButtonFormField<String>(
+                                    initialValue: selectedDateTo,
+                                    isExpanded: true,
+                                    hint: const Text("نهاية التاريخ", style: TextStyle(fontSize: 11)),
+                                    items: [
+                                      const DropdownMenuItem(value: "", child: Text("الكل", style: TextStyle(fontSize: 11))),
+                                      ...datesList.map((d) => DropdownMenuItem(value: d, child: Text(d, style: TextStyle(fontSize: 11)))),
+                                    ],
+                                    onChanged: (val) => setState(() => selectedDateTo = val),
+                                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: _showAddDialog,
+                              icon: const Icon(Icons.add, size: 16),
+                              label: const Text("إضافة بند"),
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: _editSelectedRow,
+                              icon: const Icon(Icons.edit, size: 16),
+                              label: const Text("تعديل بند"),
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: _deleteSelectedRow,
+                              icon: const Icon(Icons.delete, size: 16),
+                              label: const Text("حذف بند"),
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                if (selectedRowIndex == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("حدد صفاً أولاً لعرض صوره")));
+                                  return;
+                                }
+                                _showImageDialog(filteredList[selectedRowIndex!]);
+                              },
+                              icon: const Icon(Icons.image, size: 16),
+                              label: const Text("عرض الصورة"),
+                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD97706), foregroundColor: Colors.white),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: _exportToPdf,
+                              icon: const Icon(Icons.picture_as_pdf, size: 16),
+                              label: const Text("PDF"),
+                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade300),
                       ),
-                      Expanded(
-                        child: Scrollbar(
-                          controller: _horizontalScrollController,
-                          thumbVisibility: true,
-                          trackVisibility: true,
-                          child: SingleChildScrollView(
-                            controller: _horizontalScrollController,
-                            scrollDirection: Axis.horizontal,
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(minWidth: 1540),
-                              child: SizedBox(
-                                width: 1540,
-                                child: ListView.builder(
-                                  itemCount: filteredList.length,
-                                  itemBuilder: (context, index) {
-                                    final item = filteredList[index];
-                                    bool isSelected = selectedRowIndex == index;
-                                    
-                                    double itemTotal = double.tryParse((item['total'] ?? item['total_amount'] ?? '0').toString()) ?? 0;
-                                    List imgs = item['images'] ?? [];
-
-                                    return InkWell(
-                                      onTap: () {
-                                        setState(() {
-                                          selectedRowIndex = index;
-                                        });
-                                      },
-                                      child: Container(
-                                        color: isSelected ? Colors.purple.shade100 : (index % 2 == 0 ? Colors.white : Colors.grey.shade50),
-                                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
-                                        child: Row(
-                                          children: [
-                                            SizedBox(
-                                              width: 70,
-                                              child: IconButton(
-                                                icon: Icon(Icons.image, color: imgs.isNotEmpty ? Colors.purple : Colors.grey, size: 20),
-                                                onPressed: () => _showImageDialog(item),
-                                              ),
-                                            ),
-                                            SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['order'] ?? item['order_num'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                            SizedBox(width: 65, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['code'] ?? item['client_code'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                            SizedBox(width: 135, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['client'] ?? item['client_name'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                            SizedBox(width: 95, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['location'] ?? item['work_location'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                            SizedBox(width: 145, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['workType'] ?? item['work_type'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                            SizedBox(width: 175, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['material'] ?? item['material_type'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                            SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['qty'] ?? item['unit_count'] ?? '1'}", style: const TextStyle(fontSize: 11)))),
-                                            SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['height'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                            SizedBox(width: 60, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['width'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                            SizedBox(width: 70, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['area'] ?? '0.00'}", style: const TextStyle(fontSize: 11)))),
-                                            SizedBox(width: 80, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['sell'] ?? item['price'] ?? '0'), style: const TextStyle(fontSize: 11)))),
-                                            SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['date'] ?? item['created_date'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                            SizedBox(width: 95, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(itemTotal), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.purple, fontSize: 11)))),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Container(
+                            color: const Color(0xFF581C87),
+                            child: SingleChildScrollView(
+                              controller: _headerScrollController,
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(minWidth: 1540),
+                                child: Row(
+                                  children: const [
+                                    SizedBox(width: 70, child: Padding(padding: EdgeInsets.all(10.0), child: Text("الصورة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 75, child: Padding(padding: EdgeInsets.all(10.0), child: Text("رقم العرض", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 65, child: Padding(padding: EdgeInsets.all(10.0), child: Text("الكود", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 135, child: Padding(padding: EdgeInsets.all(10.0), child: Text("اسم العميل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 95, child: Padding(padding: EdgeInsets.all(10.0), child: Text("مكان العمل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 145, child: Padding(padding: EdgeInsets.all(10.0), child: Text("نوع العمل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 175, child: Padding(padding: EdgeInsets.all(10.0), child: Text("الخامة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 50, child: Padding(padding: EdgeInsets.all(10.0), child: Text("العدد", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 50, child: Padding(padding: EdgeInsets.all(10.0), child: Text("الطول", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 60, child: Padding(padding: EdgeInsets.all(10.0), child: Text("العرض", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 70, child: Padding(padding: EdgeInsets.all(10.0), child: Text("المساحة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 80, child: Padding(padding: EdgeInsets.all(10.0), child: Text("سعر البيع", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 90, child: Padding(padding: EdgeInsets.all(10.0), child: Text("التاريخ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 95, child: Padding(padding: EdgeInsets.all(10.0), child: Text("إجمالي العرض", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                  ],
                                 ),
                               ),
                             ),
                           ),
-                        ),
+                          Expanded(
+                            child: Scrollbar(
+                              controller: _horizontalScrollController,
+                              thumbVisibility: true,
+                              trackVisibility: true,
+                              child: SingleChildScrollView(
+                                controller: _horizontalScrollController,
+                                scrollDirection: Axis.horizontal,
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(minWidth: 1540),
+                                  child: SizedBox(
+                                    width: 1540,
+                                    child: ListView.builder(
+                                      itemCount: filteredList.length,
+                                      itemBuilder: (context, index) {
+                                        final item = filteredList[index];
+                                        bool isSelected = selectedRowIndex == index;
+                                        
+                                        double itemTotal = double.tryParse((item['total'] ?? item['total_amount'] ?? '0').toString()) ?? 0;
+                                        List imgs = item['images'] ?? [];
+
+                                        return InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              selectedRowIndex = index;
+                                            });
+                                          },
+                                          child: Container(
+                                            color: isSelected ? Colors.purple.shade100 : (index % 2 == 0 ? Colors.white : Colors.grey.shade50),
+                                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+                                            child: Row(
+                                              children: [
+                                                SizedBox(
+                                                  width: 70,
+                                                  child: IconButton(
+                                                    icon: Icon(Icons.image, color: imgs.isNotEmpty ? Colors.purple : Colors.grey, size: 20),
+                                                    onPressed: () => _showImageDialog(item),
+                                                  ),
+                                                ),
+                                                SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['order'] ?? item['order_num'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                SizedBox(width: 65, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['code'] ?? item['client_code'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                SizedBox(width: 135, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['client'] ?? item['client_name'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                SizedBox(width: 95, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['location'] ?? item['work_location'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                SizedBox(width: 145, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['workType'] ?? item['work_type'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                SizedBox(width: 175, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['material'] ?? item['material_type'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['qty'] ?? item['unit_count'] ?? '1'}", style: const TextStyle(fontSize: 11)))),
+                                                SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['height'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                SizedBox(width: 60, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['width'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                SizedBox(width: 70, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['area'] ?? '0.00'}", style: const TextStyle(fontSize: 11)))),
+                                                SizedBox(width: 80, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['sell'] ?? item['price'] ?? '0'), style: const TextStyle(fontSize: 11)))),
+                                                SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['date'] ?? item['created_date'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                SizedBox(width: 95, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(itemTotal), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.purple, fontSize: 11)))),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4C1D95),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Text("عدد البنود: ${filteredList.length}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text("إجمالي العرض: ${_formatMoney(totalAccount)} ج.م", style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4C1D95),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Text("عدد البنود: ${filteredList.length}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                    Text("إجمالي العرض: ${_formatMoney(totalAccount)} ج.م", style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 12)),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

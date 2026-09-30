@@ -63,6 +63,7 @@ class _SettingsScreenState extends State {
         logoPath = imageUrl;
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("تم اختيار الشعار بنجاح: ${result.files.single.name}")),
       );
@@ -99,6 +100,7 @@ class _SettingsScreenState extends State {
         selectedRole = "موظف";
       });
       await AppData.saveData();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم إضافة المستخدم وصلاحياته بنجاح")));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("الرجاء إدخال اسم المستخدم وكلمة المرور")));
@@ -126,6 +128,7 @@ class _SettingsScreenState extends State {
     await AppData.saveData();
     setState(() {});
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text("✅ تم حفظ وتفعيل كافة إعدادات النظام والشركة بنجاح"),
@@ -157,6 +160,7 @@ class _SettingsScreenState extends State {
                   AppData.users.clear();
                 });
                 await AppData.saveData();
+                if (!mounted) return;
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تمت تهيئة البرنامج ومسح كافة البيانات بنجاح")));
               },
@@ -171,10 +175,12 @@ class _SettingsScreenState extends State {
   void _archiveData() async {
     try {
       await AppData.saveData();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("تم أرشفة وحفظ كافة البيانات بنجاح في الذاكرة الدائمة")),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("حدث خطأ أثناء الأرشفة: $e")),
       );
@@ -479,7 +485,7 @@ class _SettingsScreenState extends State {
                                   final user = AppData.users[index];
                                   return ListTile(
                                     dense: true,
-                                    title: Text("المستخدم: ({user['username']} (){user['role']})"),
+                                    title: Text("المستخدم: (\({user['username']} (\){user['role']}))"),
                                     trailing: IconButton(
                                       icon: const Icon(Icons.delete, color: Colors.red, size: 18),
                                       onPressed: () async {

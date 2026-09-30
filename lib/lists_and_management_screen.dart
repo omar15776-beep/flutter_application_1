@@ -6,14 +6,21 @@ class ClientsScreen extends StatefulWidget {
   const ClientsScreen({super.key});
 
   @override
-  State<ClientsScreen> createState() => _ClientsScreenState();
+  State createState() => _ClientsScreenState();
 }
 
-class _ClientsScreenState extends State<ClientsScreen> {
+class _ClientsScreenState extends State {
   int? selectedIndex;
   final TextEditingController codeController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
+  final ScrollController _horizontalScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _horizontalScrollController.dispose();
+    super.dispose();
+  }
 
   void _addClient() async {
     if (codeController.text.isNotEmpty && nameController.text.isNotEmpty) {
@@ -49,6 +56,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                   selectedIndex = null;
                 });
                 await AppData.saveData();
+                if (!mounted) return;
                 Navigator.pop(context);
               },
               child: const Text("حذف"),
@@ -77,6 +85,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                   selectedIndex = null;
                 });
                 await AppData.saveData();
+                if (!mounted) return;
                 Navigator.pop(context);
               },
               child: const Text("مسح الكل"),
@@ -127,6 +136,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                     }
                   });
                   await AppData.saveData();
+                  if (!mounted) return;
                   Navigator.pop(context);
                 },
                 child: const Text("استيراد وإضافة"),
@@ -174,6 +184,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                     AppData.clients[selectedIndex!] = {"code": editCode.text, "name": editName.text, "phone": editPhone.text};
                   });
                   await AppData.saveData();
+                  if (!mounted) return;
                   Navigator.pop(context);
                 },
                 child: const Text("حفظ التعديلات"),
@@ -187,6 +198,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const double tableMinWidth = 500.0;
     return Scaffold(
       backgroundColor: const Color(0xFFF1F5F9),
       appBar: AppBar(
@@ -217,93 +229,122 @@ class _ClientsScreenState extends State<ClientsScreen> {
         textDirection: TextDirection.rtl,
         child: Padding(
           padding: const EdgeInsets.all(12.0),
-          child: Column(
-            children: [
-              Row(
+          // 📱 تفعيل التمرير العمودي الشامل للصفحة لتناسب الموبايل
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.88,
+              child: Column(
                 children: [
-                  appDataButton("دليل العملاء والأكواد", Colors.blue, () {}),
-                  const SizedBox(width: 8),
-                  appDataButtonOutlined("أنواع الخامات والأسعار", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MaterialsScreen()))),
-                  const SizedBox(width: 8),
-                  appDataButtonOutlined("طرق الدفع", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PaymentMethodsScreen()))),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
-                child: Wrap(
-                  spacing: 12,
-                  runSpacing: 10,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    SizedBox(width: 220, child: Row(children: [const SizedBox(width: 65, child: Text("كود العميل:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))), Expanded(child: SizedBox(height: 35, child: TextField(controller: codeController, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8)))) )])),
-                    SizedBox(width: 280, child: Row(children: [const SizedBox(width: 65, child: Text("اسم العميل:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))), Expanded(child: SizedBox(height: 35, child: TextField(controller: nameController, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8)))) )])),
-                    SizedBox(width: 250, child: Row(children: [const SizedBox(width: 50, child: Text("التليفون:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))), Expanded(child: SizedBox(height: 35, child: TextField(controller: phoneController, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8)))) )])),
-                    ElevatedButton.icon(onPressed: _addClient, icon: const Icon(Icons.add, size: 16), label: const Text("إضافة"), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E3A8A), foregroundColor: Colors.white, minimumSize: const Size(90, 35))),
-                    OutlinedButton.icon(onPressed: _showImportDialog, icon: const Icon(Icons.table_view, size: 16, color: Colors.green), label: const Text("استيراد", style: TextStyle(color: Colors.green)), style: OutlinedButton.styleFrom(minimumSize: const Size(90, 35))),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
-                  child: Column(
+                  Row(
                     children: [
-                      Container(
-                        color: const Color(0xFF334155),
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                        child: const Row(
-                          children: [
-                            Expanded(flex: 1, child: Text("كود العميل", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
-                            Expanded(flex: 4, child: Text("أسماء العملاء", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
-                            Expanded(flex: 2, child: Text("التليفون", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: AppData.clients.length,
-                          itemBuilder: (context, index) {
-                            final client = AppData.clients[index];
-                            bool isSelected = selectedIndex == index;
-                            return GestureDetector(
-                              onTap: () => setState(() => selectedIndex = index),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? Colors.blue.shade100 : Colors.transparent,
-                                  border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-                                ),
-                                child: Row(
+                      appDataButton("دليل العملاء والأكواد", Colors.blue, () {}),
+                      const SizedBox(width: 8),
+                      appDataButtonOutlined("أنواع الخامات والأسعار", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MaterialsScreen()))),
+                      const SizedBox(width: 8),
+                      appDataButtonOutlined("طرق الدفع", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const PaymentMethodsScreen()))),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
+                    child: Wrap(
+                      spacing: 12,
+                      runSpacing: 10,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        SizedBox(width: 220, child: Row(children: [const SizedBox(width: 65, child: Text("كود العميل:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))), Expanded(child: SizedBox(height: 35, child: TextField(controller: codeController, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8)))) )])),
+                        SizedBox(width: 280, child: Row(children: [const SizedBox(width: 65, child: Text("اسم العميل:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))), Expanded(child: SizedBox(height: 35, child: TextField(controller: nameController, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8)))) )])),
+                        SizedBox(width: 250, child: Row(children: [const SizedBox(width: 50, child: Text("التليفون:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))), Expanded(child: SizedBox(height: 35, child: TextField(controller: phoneController, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8)))) )])),
+                        ElevatedButton.icon(onPressed: _addClient, icon: const Icon(Icons.add, size: 16), label: const Text("إضافة"), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E3A8A), foregroundColor: Colors.white, minimumSize: const Size(90, 35))),
+                        OutlinedButton.icon(onPressed: _showImportDialog, icon: const Icon(Icons.table_view, size: 16, color: Colors.green), label: const Text("استيراد", style: TextStyle(color: Colors.green)), style: OutlinedButton.styleFrom(minimumSize: const Size(90, 35))),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
+                      child: Column(
+                        children: [
+                          Container(
+                            color: const Color(0xFF334155),
+                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(minWidth: tableMinWidth),
+                                child: const Row(
                                   children: [
-                                    Expanded(flex: 1, child: Text(client['code']!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12))),
-                                    Expanded(flex: 4, child: Text(client['name']!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12))),
-                                    Expanded(flex: 2, child: Text(client['phone']!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12))),
+                                    SizedBox(width: 80, child: Text("كود العميل", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
+                                    SizedBox(width: 250, child: Text("أسماء العملاء", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
+                                    SizedBox(width: 150, child: Text("التليفون", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
                                   ],
                                 ),
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Scrollbar(
+                              controller: _horizontalScrollController,
+                              thumbVisibility: true,
+                              trackVisibility: true,
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                controller: _horizontalScrollController,
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(minWidth: tableMinWidth),
+                                  child: SizedBox(
+                                    width: tableMinWidth,
+                                    child: ListView.builder(
+                                      itemCount: AppData.clients.length,
+                                      itemBuilder: (context, index) {
+                                        final client = AppData.clients[index];
+                                        bool isSelected = selectedIndex == index;
+                                        return GestureDetector(
+                                          onTap: () => setState(() => selectedIndex = index),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                            decoration: BoxDecoration(
+                                              color: isSelected ? Colors.blue.shade100 : Colors.transparent,
+                                              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                SizedBox(width: 80, child: Text(client['code']!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12))),
+                                                SizedBox(width: 250, child: Text(client['name']!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12))),
+                                                SizedBox(width: 150, child: Text(client['phone']!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12))),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      ElevatedButton.icon(onPressed: _showEditDialog, icon: const Icon(Icons.edit, size: 16), label: const Text("تعديل المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white)),
+                      const SizedBox(width: 10),
+                      ElevatedButton.icon(onPressed: _confirmDelete, icon: const Icon(Icons.delete, size: 16), label: const Text("حذف المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white)),
+                      const SizedBox(width: 10),
+                      ElevatedButton.icon(onPressed: _confirmClearAll, icon: const Icon(Icons.delete_sweep, size: 16), label: const Text("مسح الكل"), style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800, foregroundColor: Colors.white)),
                     ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ElevatedButton.icon(onPressed: _showEditDialog, icon: const Icon(Icons.edit, size: 16), label: const Text("تعديل المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white)),
-                  const SizedBox(width: 10),
-                  ElevatedButton.icon(onPressed: _confirmDelete, icon: const Icon(Icons.delete, size: 16), label: const Text("حذف المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white)),
-                  const SizedBox(width: 10),
-                  ElevatedButton.icon(onPressed: _confirmClearAll, icon: const Icon(Icons.delete_sweep, size: 16), label: const Text("مسح الكل"), style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800, foregroundColor: Colors.white)),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -315,14 +356,21 @@ class MaterialsScreen extends StatefulWidget {
   const MaterialsScreen({super.key});
 
   @override
-  State<MaterialsScreen> createState() => _MaterialsScreenState();
+  State createState() => _MaterialsScreenState();
 }
 
-class _MaterialsScreenState extends State<MaterialsScreen> {
+class _MaterialsScreenState extends State {
   int? selectedIndex;
   final TextEditingController nameController = TextEditingController();
   final TextEditingController sellController = TextEditingController();
   final TextEditingController costController = TextEditingController();
+  final ScrollController _horizontalScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _horizontalScrollController.dispose();
+    super.dispose();
+  }
 
   void _addMaterial() async {
     if (nameController.text.isNotEmpty) {
@@ -363,6 +411,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
                   selectedIndex = null;
                 });
                 await AppData.saveData();
+                if (!mounted) return;
                 Navigator.pop(context);
               },
               child: const Text("حذف"),
@@ -391,6 +440,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
                   selectedIndex = null;
                 });
                 await AppData.saveData();
+                if (!mounted) return;
                 Navigator.pop(context);
               },
               child: const Text("مسح الكل"),
@@ -442,6 +492,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
                     }
                   });
                   await AppData.saveData();
+                  if (!mounted) return;
                   Navigator.pop(context);
                 },
                 child: const Text("استيراد وإضافة"),
@@ -494,6 +545,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
                     };
                   });
                   await AppData.saveData();
+                  if (!mounted) return;
                   Navigator.pop(context);
                 },
                 child: const Text("حفظ التعديلات"),
@@ -507,6 +559,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const double tableMinWidth = 550.0;
     return Scaffold(
       backgroundColor: const Color(0xFFF1F5F9),
       appBar: AppBar(
@@ -526,95 +579,124 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
         textDirection: TextDirection.rtl,
         child: Padding(
           padding: const EdgeInsets.all(12.0),
-          child: Column(
-            children: [
-              Row(
+          // 📱 تفعيل التمرير العمودي الشامل للصفحة لتناسب الموبايل
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.88,
+              child: Column(
                 children: [
-                  appDataButtonOutlined("دليل العملاء والأكواد", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => ClientsScreen()))),
-                  const SizedBox(width: 8),
-                  appDataButton("أنواع الخامات والأسعار", Colors.blue, () {}),
-                  const SizedBox(width: 8),
-                  appDataButtonOutlined("طرق الدفع", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PaymentMethodsScreen()))),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
-                child: Wrap(
-                  spacing: 12,
-                  runSpacing: 10,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    SizedBox(width: 250, child: Row(children: [const SizedBox(width: 65, child: Text("الخامة:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))), Expanded(child: SizedBox(height: 35, child: TextField(controller: nameController, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8)))) )])),
-                    SizedBox(width: 180, child: Row(children: [const SizedBox(width: 50, child: Text("البيع:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))), Expanded(child: SizedBox(height: 35, child: TextField(controller: sellController, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8)))) )])),
-                    SizedBox(width: 180, child: Row(children: [const SizedBox(width: 50, child: Text("التكلفة:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))), Expanded(child: SizedBox(height: 35, child: TextField(controller: costController, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8)))) )])),
-                    ElevatedButton.icon(onPressed: _addMaterial, icon: const Icon(Icons.add, size: 16), label: const Text("إضافة"), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E3A8A), foregroundColor: Colors.white, minimumSize: const Size(90, 35))),
-                    OutlinedButton.icon(onPressed: _showImportDialog, icon: const Icon(Icons.table_view, size: 16, color: Colors.green), label: const Text("استيراد", style: TextStyle(color: Colors.green)), style: OutlinedButton.styleFrom(minimumSize: const Size(90, 35))),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
-                  child: Column(
+                  Row(
                     children: [
-                      Container(
-                        color: const Color(0xFF334155),
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                        child: const Row(
-                          children: [
-                            Expanded(flex: 1, child: Text("م", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
-                            Expanded(flex: 4, child: Text("أنواع الخامة", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
-                            Expanded(flex: 2, child: Text("سعر البيع", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
-                            Expanded(flex: 2, child: Text("سعر التكلفة", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: AppData.materials.length,
-                          itemBuilder: (context, index) {
-                            final mat = AppData.materials[index];
-                            bool isSelected = selectedIndex == index;
-                            return GestureDetector(
-                              onTap: () => setState(() => selectedIndex = index),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? Colors.blue.shade100 : Colors.transparent,
-                                  border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-                                ),
-                                child: Row(
+                      appDataButtonOutlined("دليل العملاء والأكواد", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ClientsScreen()))),
+                      const SizedBox(width: 8),
+                      appDataButton("أنواع الخامات والأسعار", Colors.blue, () {}),
+                      const SizedBox(width: 8),
+                      appDataButtonOutlined("طرق الدفع", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const PaymentMethodsScreen()))),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
+                    child: Wrap(
+                      spacing: 12,
+                      runSpacing: 10,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        SizedBox(width: 250, child: Row(children: [const SizedBox(width: 65, child: Text("الخامة:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))), Expanded(child: SizedBox(height: 35, child: TextField(controller: nameController, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8)))) )])),
+                        SizedBox(width: 180, child: Row(children: [const SizedBox(width: 50, child: Text("البيع:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))), Expanded(child: SizedBox(height: 35, child: TextField(controller: sellController, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8)))) )])),
+                        SizedBox(width: 180, child: Row(children: [const SizedBox(width: 50, child: Text("التكلفة:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))), Expanded(child: SizedBox(height: 35, child: TextField(controller: costController, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8)))) )])),
+                        ElevatedButton.icon(onPressed: _addMaterial, icon: const Icon(Icons.add, size: 16), label: const Text("إضافة"), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E3A8A), foregroundColor: Colors.white, minimumSize: const Size(90, 35))),
+                        OutlinedButton.icon(onPressed: _showImportDialog, icon: const Icon(Icons.table_view, size: 16, color: Colors.green), label: const Text("استيراد", style: TextStyle(color: Colors.green)), style: OutlinedButton.styleFrom(minimumSize: const Size(90, 35))),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
+                      child: Column(
+                        children: [
+                          Container(
+                            color: const Color(0xFF334155),
+                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(minWidth: tableMinWidth),
+                                child: const Row(
                                   children: [
-                                    Expanded(flex: 1, child: Text(mat['m']!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12))),
-                                    Expanded(flex: 4, child: Text(mat['name']!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12))),
-                                    Expanded(flex: 2, child: Text(mat['sell']!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12))),
-                                    Expanded(flex: 2, child: Text(mat['cost']!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12))),
+                                    SizedBox(width: 50, child: Text("م", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
+                                    SizedBox(width: 250, child: Text("أنواع الخامة", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
+                                    SizedBox(width: 120, child: Text("سعر البيع", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
+                                    SizedBox(width: 120, child: Text("سعر التكلفة", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
                                   ],
                                 ),
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Scrollbar(
+                              controller: _horizontalScrollController,
+                              thumbVisibility: true,
+                              trackVisibility: true,
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                controller: _horizontalScrollController,
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(minWidth: tableMinWidth),
+                                  child: SizedBox(
+                                    width: tableMinWidth,
+                                    child: ListView.builder(
+                                      itemCount: AppData.materials.length,
+                                      itemBuilder: (context, index) {
+                                        final mat = AppData.materials[index];
+                                        bool isSelected = selectedIndex == index;
+                                        return GestureDetector(
+                                          onTap: () => setState(() => selectedIndex = index),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                            decoration: BoxDecoration(
+                                              color: isSelected ? Colors.blue.shade100 : Colors.transparent,
+                                              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                SizedBox(width: 50, child: Text(mat['m']!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12))),
+                                                SizedBox(width: 250, child: Text(mat['name']!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12))),
+                                                SizedBox(width: 120, child: Text(mat['sell']!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12))),
+                                                SizedBox(width: 120, child: Text(mat['cost']!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12))),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      ElevatedButton.icon(onPressed: _showEditDialog, icon: const Icon(Icons.edit, size: 16), label: const Text("تعديل المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white)),
+                      const SizedBox(width: 10),
+                      ElevatedButton.icon(onPressed: _confirmDelete, icon: const Icon(Icons.delete, size: 16), label: const Text("حذف المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white)),
+                      const SizedBox(width: 10),
+                      ElevatedButton.icon(onPressed: _confirmClearAll, icon: const Icon(Icons.delete_sweep, size: 16), label: const Text("مسح الكل"), style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800, foregroundColor: Colors.white)),
                     ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ElevatedButton.icon(onPressed: _showEditDialog, icon: const Icon(Icons.edit, size: 16), label: const Text("تعديل المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white)),
-                  const SizedBox(width: 10),
-                  ElevatedButton.icon(onPressed: _confirmDelete, icon: const Icon(Icons.delete, size: 16), label: const Text("حذف المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white)),
-                  const SizedBox(width: 10),
-                  ElevatedButton.icon(onPressed: _confirmClearAll, icon: const Icon(Icons.delete_sweep, size: 16), label: const Text("مسح الكل"), style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800, foregroundColor: Colors.white)),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -626,12 +708,19 @@ class PaymentMethodsScreen extends StatefulWidget {
   const PaymentMethodsScreen({super.key});
 
   @override
-  State<PaymentMethodsScreen> createState() => _PaymentMethodsScreenState();
+  State createState() => _PaymentMethodsScreenState();
 }
 
-class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
+class _PaymentMethodsScreenState extends State {
   int? selectedIndex;
   final TextEditingController methodController = TextEditingController();
+  final ScrollController _horizontalScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _horizontalScrollController.dispose();
+    super.dispose();
+  }
 
   void _addMethod() async {
     if (methodController.text.isNotEmpty) {
@@ -665,6 +754,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                   selectedIndex = null;
                 });
                 await AppData.saveData();
+                if (!mounted) return;
                 Navigator.pop(context);
               },
               child: const Text("حذف"),
@@ -693,6 +783,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                   selectedIndex = null;
                 });
                 await AppData.saveData();
+                if (!mounted) return;
                 Navigator.pop(context);
               },
               child: const Text("مسح الكل"),
@@ -726,6 +817,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                   AppData.methods[selectedIndex!] = {"m": AppData.methods[selectedIndex!]['m']!, "name": editName.text};
                 });
                 await AppData.saveData();
+                if (!mounted) return;
                 Navigator.pop(context);
               },
               child: const Text("حفظ"),
@@ -738,6 +830,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const double tableMinWidth = 300.0;
     return Scaffold(
       backgroundColor: const Color(0xFFF1F5F9),
       appBar: AppBar(
@@ -749,61 +842,105 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
         textDirection: TextDirection.rtl,
         child: Padding(
           padding: const EdgeInsets.all(12.0),
-          child: Column(
-            children: [
-              Row(
+          // 📱 تفعيل التمرير العمودي الشامل للصفحة لتناسب الموبايل
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.88,
+              child: Column(
                 children: [
-                  appDataButtonOutlined("دليل العملاء", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => ClientsScreen()))),
-                  const SizedBox(width: 8),
-                  appDataButtonOutlined("الخامات والأسعار", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MaterialsScreen()))),
-                  const SizedBox(width: 8),
-                  appDataButton("طرق الدفع", Colors.blue, () {}),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  SizedBox(width: 300, child: TextField(controller: methodController, decoration: const InputDecoration(labelText: "طريقة الدفع", border: OutlineInputBorder()))),
-                  const SizedBox(width: 10),
-                  ElevatedButton(onPressed: _addMethod, child: const Text("إضافة")),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.grey.shade300)),
-                  child: ListView.builder(
-                    itemCount: AppData.methods.length,
-                    itemBuilder: (context, index) {
-                      final m = AppData.methods[index];
-                      bool isSelected = selectedIndex == index;
-                      return GestureDetector(
-                        onTap: () => setState(() => selectedIndex = index),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: isSelected ? Colors.blue.shade100 : Colors.transparent,
-                            border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-                          ),
-                          child: Text(m['name']!),
-                        ),
-                      );
-                    },
+                  Row(
+                    children: [
+                      appDataButtonOutlined("دليل العملاء", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ClientsScreen()))),
+                      const SizedBox(width: 8),
+                      appDataButtonOutlined("الخامات والأسعار", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MaterialsScreen()))),
+                      const SizedBox(width: 8),
+                      appDataButton("طرق الدفع", Colors.blue, () {}),
+                    ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ElevatedButton.icon(onPressed: _showEditDialog, icon: const Icon(Icons.edit, size: 16), label: const Text("تعديل المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white)),
-                  const SizedBox(width: 10),
-                  ElevatedButton.icon(onPressed: _confirmDelete, icon: const Icon(Icons.delete, size: 16), label: const Text("حذف المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white)),
-                  const SizedBox(width: 10),
-                  ElevatedButton.icon(onPressed: _confirmClearAll, icon: const Icon(Icons.delete_sweep, size: 16), label: const Text(" مسح الكل"), style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800, foregroundColor: Colors.white)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      SizedBox(width: 300, child: TextField(controller: methodController, decoration: const InputDecoration(labelText: "طريقة الدفع", border: OutlineInputBorder()))),
+                      const SizedBox(width: 10),
+                      ElevatedButton(onPressed: _addMethod, child: const Text("إضافة")),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.grey.shade300)),
+                      child: Column(
+                        children: [
+                          Container(
+                            color: const Color(0xFF334155),
+                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(minWidth: tableMinWidth),
+                                child: const Row(
+                                  children: [
+                                    SizedBox(width: 250, child: Text("طرق الدفع", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Scrollbar(
+                              controller: _horizontalScrollController,
+                              thumbVisibility: true,
+                              trackVisibility: true,
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                controller: _horizontalScrollController,
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(minWidth: tableMinWidth),
+                                  child: SizedBox(
+                                    width: tableMinWidth,
+                                    child: ListView.builder(
+                                      itemCount: AppData.methods.length,
+                                      itemBuilder: (context, index) {
+                                        final m = AppData.methods[index];
+                                        bool isSelected = selectedIndex == index;
+                                        return GestureDetector(
+                                          onTap: () => setState(() => selectedIndex = index),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: isSelected ? Colors.blue.shade100 : Colors.transparent,
+                                              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                                            ),
+                                            child: Text(m['name']!),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      ElevatedButton.icon(onPressed: _showEditDialog, icon: const Icon(Icons.edit, size: 16), label: const Text("تعديل المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white)),
+                      const SizedBox(width: 10),
+                      ElevatedButton.icon(onPressed: _confirmDelete, icon: const Icon(Icons.delete, size: 16), label: const Text("حذف المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white)),
+                      const SizedBox(width: 10),
+                      ElevatedButton.icon(onPressed: _confirmClearAll, icon: const Icon(Icons.delete_sweep, size: 16), label: const Text(" مسح الكل"), style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800, foregroundColor: Colors.white)),
+                    ],
+                  ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),
