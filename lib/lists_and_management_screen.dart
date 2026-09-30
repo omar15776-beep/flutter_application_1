@@ -198,7 +198,7 @@ class _ClientsScreenState extends State {
 
   @override
   Widget build(BuildContext context) {
-    const double tableMinWidth = 500.0;
+    const double tableMinWidth = 550.0; // تم ضبط العرض لمنع الـ Overflow
     return Scaffold(
       backgroundColor: const Color(0xFFF1F5F9),
       appBar: AppBar(
@@ -229,19 +229,18 @@ class _ClientsScreenState extends State {
         textDirection: TextDirection.rtl,
         child: Padding(
           padding: const EdgeInsets.all(12.0),
-          // 📱 تفعيل التمرير العمودي الشامل للصفحة لتناسب الموبايل
           child: SingleChildScrollView(
             scrollDirection: Axis.vertical,
             child: SizedBox(
               height: MediaQuery.of(context).size.height * 0.88,
               child: Column(
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       appDataButton("دليل العملاء والأكواد", Colors.blue, () {}),
-                      const SizedBox(width: 8),
                       appDataButtonOutlined("أنواع الخامات والأسعار", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MaterialsScreen()))),
-                      const SizedBox(width: 8),
                       appDataButtonOutlined("طرق الدفع", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const PaymentMethodsScreen()))),
                     ],
                   ),
@@ -332,13 +331,13 @@ class _ClientsScreenState extends State {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.end,
                     children: [
                       ElevatedButton.icon(onPressed: _showEditDialog, icon: const Icon(Icons.edit, size: 16), label: const Text("تعديل المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white)),
-                      const SizedBox(width: 10),
                       ElevatedButton.icon(onPressed: _confirmDelete, icon: const Icon(Icons.delete, size: 16), label: const Text("حذف المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white)),
-                      const SizedBox(width: 10),
                       ElevatedButton.icon(onPressed: _confirmClearAll, icon: const Icon(Icons.delete_sweep, size: 16), label: const Text("مسح الكل"), style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800, foregroundColor: Colors.white)),
                     ],
                   ),
@@ -559,7 +558,7 @@ class _MaterialsScreenState extends State {
 
   @override
   Widget build(BuildContext context) {
-    const double tableMinWidth = 550.0;
+    const double tableMinWidth = 600.0; // تم ضبط العرض لمنع الـ Overflow
     return Scaffold(
       backgroundColor: const Color(0xFFF1F5F9),
       appBar: AppBar(
@@ -579,19 +578,18 @@ class _MaterialsScreenState extends State {
         textDirection: TextDirection.rtl,
         child: Padding(
           padding: const EdgeInsets.all(12.0),
-          // 📱 تفعيل التمرير العمودي الشامل للصفحة لتناسب الموبايل
           child: SingleChildScrollView(
             scrollDirection: Axis.vertical,
             child: SizedBox(
               height: MediaQuery.of(context).size.height * 0.88,
               child: Column(
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       appDataButtonOutlined("دليل العملاء والأكواد", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ClientsScreen()))),
-                      const SizedBox(width: 8),
                       appDataButton("أنواع الخامات والأسعار", Colors.blue, () {}),
-                      const SizedBox(width: 8),
                       appDataButtonOutlined("طرق الدفع", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const PaymentMethodsScreen()))),
                     ],
                   ),
@@ -684,13 +682,13 @@ class _MaterialsScreenState extends State {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.end,
                     children: [
                       ElevatedButton.icon(onPressed: _showEditDialog, icon: const Icon(Icons.edit, size: 16), label: const Text("تعديل المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white)),
-                      const SizedBox(width: 10),
                       ElevatedButton.icon(onPressed: _confirmDelete, icon: const Icon(Icons.delete, size: 16), label: const Text("حذف المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white)),
-                      const SizedBox(width: 10),
                       ElevatedButton.icon(onPressed: _confirmClearAll, icon: const Icon(Icons.delete_sweep, size: 16), label: const Text("مسح الكل"), style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800, foregroundColor: Colors.white)),
                     ],
                   ),
@@ -842,19 +840,18 @@ class _PaymentMethodsScreenState extends State {
         textDirection: TextDirection.rtl,
         child: Padding(
           padding: const EdgeInsets.all(12.0),
-          // 📱 تفعيل التمرير العمودي الشامل للصفحة لتناسب الموبايل
           child: SingleChildScrollView(
             scrollDirection: Axis.vertical,
             child: SizedBox(
               height: MediaQuery.of(context).size.height * 0.88,
               child: Column(
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       appDataButtonOutlined("دليل العملاء", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ClientsScreen()))),
-                      const SizedBox(width: 8),
                       appDataButtonOutlined("الخامات والأسعار", () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MaterialsScreen()))),
-                      const SizedBox(width: 8),
                       appDataButton("طرق الدفع", Colors.blue, () {}),
                     ],
                   ),
@@ -928,13 +925,13 @@ class _PaymentMethodsScreenState extends State {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.end,
                     children: [
                       ElevatedButton.icon(onPressed: _showEditDialog, icon: const Icon(Icons.edit, size: 16), label: const Text("تعديل المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white)),
-                      const SizedBox(width: 10),
                       ElevatedButton.icon(onPressed: _confirmDelete, icon: const Icon(Icons.delete, size: 16), label: const Text("حذف المحدد"), style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white)),
-                      const SizedBox(width: 10),
                       ElevatedButton.icon(onPressed: _confirmClearAll, icon: const Icon(Icons.delete_sweep, size: 16), label: const Text(" مسح الكل"), style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800, foregroundColor: Colors.white)),
                     ],
                   ),

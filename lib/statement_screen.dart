@@ -552,7 +552,7 @@ class _StatementScreenState extends State<StatementScreen> {
                 ),
               pw.SizedBox(height: 15),
 
-              // الشريط العلوي (بدون مكان العمل)
+              // الشريط العلوي
               pw.Header(
                 level: 0,
                 child: pw.Row(
@@ -565,7 +565,7 @@ class _StatementScreenState extends State<StatementScreen> {
               ),
               pw.SizedBox(height: 10),
 
-              // جدول الـ PDF (بدون عمود رقم الطلب)
+              // جدول الـ PDF مع إضافة عمود "إجمالي حساب العمل" في نهاية الصفوف بعد التاريخ (أقصى اليمين)
               pw.Table.fromTextArray(
                 headerStyle: pw.TextStyle(font: fontBold, fontWeight: pw.FontWeight.bold, color: pw.PdfColors.white, fontSize: pdfHeaderTableFontSize),
                 headerDecoration: pw.BoxDecoration(color: pw.PdfColor.fromInt(pdfHeaderColor.toARGB32())),
@@ -573,19 +573,33 @@ class _StatementScreenState extends State<StatementScreen> {
                 cellAlignment: pw.Alignment.center,
                 cellHeight: pdfRowHeight,
                 columnWidths: {
-                  0: pw.FixedColumnWidth(pdfColWidths[10]),
-                  1: pw.FixedColumnWidth(pdfColWidths[9]),
-                  2: pw.FixedColumnWidth(pdfColWidths[8]),
-                  3: pw.FixedColumnWidth(pdfColWidths[7]),
-                  4: pw.FixedColumnWidth(pdfColWidths[6]),
-                  5: pw.FixedColumnWidth(pdfColWidths[5]),
-                  6: pw.FixedColumnWidth(pdfColWidths[4]),
-                  7: pw.FixedColumnWidth(pdfColWidths[3]),
-                  8: pw.FixedColumnWidth(pdfColWidths[2]),
-                  9: pw.FixedColumnWidth(pdfColWidths[1]),
-                  10: pw.FixedColumnWidth(pdfColWidths[0]),
+                  0: const pw.FixedColumnWidth(110.0), // إجمالي حساب العمل
+                  1: const pw.FixedColumnWidth(65.0),  // التاريخ
+                  2: const pw.FixedColumnWidth(65.0),  // نوع الدفع
+                  3: const pw.FixedColumnWidth(70.0),  // المدفوعات
+                  4: const pw.FixedColumnWidth(60.0),  // الحساب
+                  5: const pw.FixedColumnWidth(60.0),  // السعر
+                  6: const pw.FixedColumnWidth(45.0),  // المساحة
+                  7: const pw.FixedColumnWidth(90.0),  // العدد
+                  8: const pw.FixedColumnWidth(85.0),  // نوع الخامة
+                  9: const pw.FixedColumnWidth(85.0),  // بيان العمل
+                  10: const pw.FixedColumnWidth(30.0), // مكان العمل
+                  11: const pw.FixedColumnWidth(30.0), // م
                 },
-                headers: ['التاريخ', 'نوع الدفع', 'المدفوعات', 'الحساب', 'السعر', 'المساحة', 'العدد', 'نوع الخامة', 'بيان العمل', 'مكان العمل', 'م'],
+                headers: [
+                  'إجمالي حساب العمل', 
+                  'التاريخ', 
+                  'نوع الدفع', 
+                  'المدفوعات', 
+                  'الحساب', 
+                  'السعر', 
+                  'المساحة', 
+                  'العدد', 
+                  'نوع الخامة', 
+                  'بيان العمل', 
+                  'مكان العمل', 
+                  'م'
+                ],
                 data: rows.asMap().entries.map((entry) {
                   int idx = entry.key;
                   var item = entry.value;
@@ -609,6 +623,7 @@ class _StatementScreenState extends State<StatementScreen> {
                   String paidVal = _formatMoney(item['paid'] ?? item['paid_amount'] ?? item['payment'] ?? '0');
 
                   return [
+                    groupWorkTotalStr, // إجمالي حساب العمل (في البداية يمين الـ RTL)
                     "${item['date'] ?? item['created_date'] ?? ''}",
                     payTypeVal,
                     paidVal,
@@ -639,8 +654,7 @@ class _StatementScreenState extends State<StatementScreen> {
                 ),
               ),
 
-              // ملاحظات إضافية أسفل شريط الإجمالي في الـ PDF
-              // ملاحظات إضافية أسفل شريط الإجمالي في الـ PDF
+              // ملاحظات إضافية
               if (pdfFooterNotes.isNotEmpty) ...[
                 pw.SizedBox(height: 15),
                 pw.Container(
@@ -661,7 +675,7 @@ class _StatementScreenState extends State<StatementScreen> {
         ),
       );
 
-      String dynamicFileName = "كشف حساب العميل \({selectedClient ?? 'عام'} -\){DateTime.now().toString().split(' ')[0]}.pdf";
+      String dynamicFileName = "كشف حساب العميل ${selectedClient ?? 'عام'} - ${DateTime.now().toString().split(' ')[0]}.pdf";
 
       if (!mounted) return;
       await Navigator.push(
