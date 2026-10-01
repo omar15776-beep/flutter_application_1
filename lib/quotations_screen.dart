@@ -18,33 +18,16 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
   final TextEditingController phoneController = TextEditingController();
   
   String orderNum = "1";
-  final String currentDate = "2026-09-17";
-  String? selectedDocId;
+  final String currentDate = "2026-09-14";
   
+  String? selectedDocId;
   final ScrollController _horizontalScrollController = ScrollController();
-  final ScrollController _headerScrollController = ScrollController();
 
   final CollectionReference quotationsRef = FirebaseFirestore.instance.collection('quotations');
 
   @override
-  void initState() {
-    super.initState();
-    _horizontalScrollController.addListener(() {
-      if (_headerScrollController.hasClients && _headerScrollController.offset != _horizontalScrollController.offset) {
-        _headerScrollController.jumpTo(_horizontalScrollController.offset);
-      }
-    });
-    _headerScrollController.addListener(() {
-      if (_horizontalScrollController.hasClients && _horizontalScrollController.offset != _horizontalScrollController.offset) {
-        _horizontalScrollController.jumpTo(_horizontalScrollController.offset);
-      }
-    });
-  }
-
-  @override
   void dispose() {
     _horizontalScrollController.dispose();
-    _headerScrollController.dispose();
     clientController.dispose();
     locationController.dispose();
     codeController.dispose();
@@ -154,8 +137,7 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
 
   void _deleteSelectedSaved() async {
     if (selectedDocId == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("الرجاء تحديد سطر من عروض الأسعار المحفوظة أدناه للحذف")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("الرجاء تحديد سطر من السجلات المحفوظة أدناه للحذف")));
       return;
     }
     await quotationsRef.doc(selectedDocId).delete();
@@ -164,9 +146,10 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
     });
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم حذف السطر وتحديث السحابة للعروض")));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم حذف السطر وتحديث السحابة")));
   }
- void _showImagesDialog(int index) {
+
+  void _showImagesDialog(int index) {
     final row = measurementRows[index];
     List<String> images = List<String>.from(row['images']);
 
@@ -205,7 +188,7 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                         },
                         icon: const Icon(Icons.folder_open),
                         label: const Text("تصفح واختيار صور"),
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF581C87), foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 38)),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 38)),
                       ),
                       const SizedBox(height: 10),
                       const Divider(),
@@ -397,54 +380,10 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                             ],
                           ),
                         ),
-                        SizedBox(width: 120, child: Row(children: [const SizedBox(width: 35, child: Text("الكود:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))), Expanded(child: SizedBox(height: 32, child: TextField(controller: codeController, textAlign: TextAlign.center, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 0)))) )])),
-                        SizedBox(
-                          width: 135,
-                          child: Row(
-                            children: [
-                              const SizedBox(width: 40, child: Text("الطلب:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                              Expanded(
-                                child: Container(
-                                  height: 32,
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE2E8F0),
-                                    border: Border.all(color: Colors.grey),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    orderNum,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF581C87)),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: 200, child: Row(children: [const SizedBox(width: 45, child: Text("التليفون:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))), Expanded(child: SizedBox(height: 32, child: TextField(controller: phoneController, textAlign: TextAlign.center, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)))) )])),
-                        SizedBox(
-                          width: 180,
-                          child: Row(
-                            children: [
-                              const SizedBox(width: 45, child: Text("التاريخ:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                              Expanded(
-                                child: Container(
-                                  height: 32,
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE2E8F0),
-                                    border: Border.all(color: Colors.grey),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    currentDate,
-                                    style: const TextStyle(fontSize: 12),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        SizedBox(width: 180, child: Row(children: [const SizedBox(width: 50, child: Text("الكود:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))), Expanded(child: SizedBox(height: 32, child: TextField(controller: codeController, textAlign: TextAlign.center, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)))) )])),
+                        SizedBox(width: 180, child: Row(children: [const SizedBox(width: 65, child: Text("رقم الطلب:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))), Expanded(child: Container(height: 32, alignment: Alignment.center, decoration: BoxDecoration(color: const Color(0xFFE2E8F0), border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(4)), child: Text(orderNum, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.purple))))])),
+                        SizedBox(width: 220, child: Row(children: [const SizedBox(width: 50, child: Text("التليفون:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))), Expanded(child: SizedBox(height: 32, child: TextField(controller: phoneController, textAlign: TextAlign.center, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)))) )])),
+                        SizedBox(width: 200, child: Row(children: [const SizedBox(width: 50, child: Text("التاريخ:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))), Expanded(child: Container(height: 32, alignment: Alignment.center, decoration: BoxDecoration(color: const Color(0xFFE2E8F0), border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(4)), child: Text(currentDate, style: const TextStyle(fontSize: 12))))])),
                       ],
                     ),
                   ),
@@ -468,7 +407,7 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text("جدول المقاسات والأصناف (العرض)", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                const Text("جدول المقاسات والأصناف (عروض الأسعار)", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                                 ElevatedButton.icon(
                                   onPressed: _addRow,
                                   icon: const Icon(Icons.add, size: 14),
@@ -481,27 +420,21 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
                             decoration: const BoxDecoration(color: Color(0xFF4C1D95)),
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(minWidth: 900),
-                                child: const Row(
-                                  children: [
-                                    SizedBox(width: 35, child: Text("م", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
-                                    SizedBox(width: 120, child: Text("نوع العمل", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
-                                    SizedBox(width: 180, child: Text("نوع الخامة", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
-                                    SizedBox(width: 45, child: Text("العدد", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
-                                    SizedBox(width: 45, child: Text("الطول", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
-                                    SizedBox(width: 58, child: Text("العرض", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
-                                    SizedBox(width: 80, child: Text("المساحة", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
-                                    SizedBox(width: 70, child: Text("سعر البيع", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
-                                    SizedBox(width: 70, child: Text("سعر التكلفة", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
-                                    SizedBox(width: 80, child: Text("الإجمالي", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
-                                    SizedBox(width: 50, child: Text("صورة", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
-                                    SizedBox(width: 30, child: Text("")),
-                                  ],
-                                ),
-                              ),
+                            child: const Row(
+                              children: [
+                                SizedBox(width: 35, child: Text("م", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
+                                Expanded(flex: 3, child: Text("نوع العمل", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
+                                Expanded(flex: 3, child: Text("نوع الخامة", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
+                                Expanded(flex: 1, child: Text("العدد", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
+                                Expanded(flex: 1, child: Text("الطول", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
+                                Expanded(flex: 1, child: Text("العرض", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
+                                Expanded(flex: 1, child: Text("المساحة", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
+                                Expanded(flex: 1, child: Text("سعر البيع", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
+                                Expanded(flex: 1, child: Text("سعر التكلفة", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
+                                Expanded(flex: 1, child: Text("الإجمالي", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
+                                Expanded(flex: 1, child: Text("صورة", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
+                                SizedBox(width: 30),
+                              ],
                             ),
                           ),
                           Expanded(
@@ -512,103 +445,97 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                                 return Container(
                                   padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
                                   decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade300))),
-                                  child: SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    child: ConstrainedBox(
-                                      constraints: const BoxConstraints(minWidth: 900),
-                                      child: Row(
-                                        children: [
-                                          SizedBox(
-                                            width: 35,
-                                            child: Text(
-                                              "${index + 1}",
-                                              textAlign: TextAlign.center,
-                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.purple),
-                                            ),
+                                  child: Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 35,
+                                        child: Text(
+                                          "${index + 1}",
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.purple),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        flex: 3,
+                                        child: SizedBox(
+                                          height: 28,
+                                          child: TextField(
+                                            controller: row['workType'],
+                                            decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 0)),
+                                            style: const TextStyle(fontSize: 11),
                                           ),
-                                          const SizedBox(width: 4),
-                                          SizedBox(
-                                            width: 120,
-                                            child: SizedBox(
-                                              height: 28,
-                                              child: TextField(
-                                                controller: row['workType'],
-                                                decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 0)),
-                                                style: const TextStyle(fontSize: 11),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          SizedBox(
-                                            width: 180,
-                                            child: SizedBox(
-                                              height: 28,
-                                              child: Autocomplete<Map<String, String>>(
-                                                optionsBuilder: (TextEditingValue textEditingValue) {
-                                                  if (textEditingValue.text.isEmpty) return AppData.materials;
-                                                  return AppData.materials.where((m) => m['name']!.contains(textEditingValue.text));
-                                                },
-                                                displayStringForOption: (option) => option['name']!,
-                                                onSelected: (selection) {
-                                                  setState(() {
-                                                    row['material'].text = selection['name']!;
-                                                    row['sellPrice'].text = selection['sell']!;
-                                                    row['costPrice'].text = selection['cost']!;
-                                                    _calculateRow(index);
-                                                  });
-                                                },
-                                                fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                                                  if (controller.text.isEmpty && row['material'].text.isNotEmpty) {
-                                                    controller.text = row['material'].text;
-                                                  }
-                                                  return TextField(
-                                                    controller: controller,
-                                                    focusNode: focusNode,
-                                                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 0)),
-                                                    style: const TextStyle(fontSize: 11),
-                                                    onChanged: (val) => row['material'].text = val,
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          SizedBox(width: 45, child: SizedBox(height: 28, child: TextField(controller: row['qty'], textAlign: TextAlign.center, style: const TextStyle(fontSize: 11), onChanged: (v) => _calculateRow(index), decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.zero)))),
-                                          const SizedBox(width: 4),
-                                          SizedBox(width: 45, child: SizedBox(height: 28, child: TextField(controller: row['height'], textAlign: TextAlign.center, style: const TextStyle(fontSize: 11), onChanged: (v) => _calculateRow(index), decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.zero)))),
-                                          const SizedBox(width: 4),
-                                          SizedBox(width: 58, child: SizedBox(height: 28, child: TextField(controller: row['width'], textAlign: TextAlign.center, style: const TextStyle(fontSize: 11), onChanged: (v) => _calculateRow(index), decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.zero)))),
-                                          const SizedBox(width: 4),
-                                          SizedBox(width: 80, child: SizedBox(height: 28, child: TextField(controller: row['area'], readOnly: true, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11), decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.zero)))),
-                                          const SizedBox(width: 4),
-                                          SizedBox(width: 70, child: SizedBox(height: 28, child: TextField(controller: row['sellPrice'], textAlign: TextAlign.center, style: const TextStyle(fontSize: 11), onChanged: (v) => _calculateRow(index), decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.zero)))),
-                                          const SizedBox(width: 4),
-                                          SizedBox(width: 70, child: SizedBox(height: 28, child: TextField(controller: row['costPrice'], textAlign: TextAlign.center, style: const TextStyle(fontSize: 11), onChanged: (v) => _calculateRow(index), decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.zero)))),
-                                          const SizedBox(width: 4),
-                                          SizedBox(width: 80, child: SizedBox(height: 28, child: TextField(controller: row['total'], readOnly: true, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11), decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.zero)))),
-                                          const SizedBox(width: 4),
-                                          SizedBox(
-                                            width: 50,
-                                            child: SizedBox(
-                                              height: 28,
-                                              child: OutlinedButton(
-                                                onPressed: () => _showImagesDialog(index),
-                                                style: OutlinedButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(28, 28)),
-                                                child: Text("صور (${(row['images'] as List).length})", style: const TextStyle(fontSize: 8)),
-                                              ),
-                                            ),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.delete, color: Colors.red, size: 16),
-                                            onPressed: () {
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        flex: 3,
+                                        child: SizedBox(
+                                          height: 28,
+                                          child: Autocomplete<Map<String, String>>(
+                                            optionsBuilder: (TextEditingValue textEditingValue) {
+                                              if (textEditingValue.text.isEmpty) return AppData.materials;
+                                              return AppData.materials.where((m) => m['name']!.contains(textEditingValue.text));
+                                            },
+                                            displayStringForOption: (option) => option['name']!,
+                                            onSelected: (selection) {
                                               setState(() {
-                                                if (measurementRows.length > 1) measurementRows.removeAt(index);
+                                                row['material'].text = selection['name']!;
+                                                row['sellPrice'].text = selection['sell']!;
+                                                row['costPrice'].text = selection['cost']!;
+                                                _calculateRow(index);
                                               });
                                             },
+                                            fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                                              if (controller.text.isEmpty && row['material'].text.isNotEmpty) {
+                                                controller.text = row['material'].text;
+                                              }
+                                              return TextField(
+                                                controller: controller,
+                                                focusNode: focusNode,
+                                                decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 0)),
+                                                style: const TextStyle(fontSize: 11),
+                                                onChanged: (val) => row['material'].text = val,
+                                              );
+                                            },
                                           ),
-                                        ],
+                                        ),
                                       ),
-                                    ),
+                                      const SizedBox(width: 4),
+                                      Expanded(flex: 1, child: SizedBox(height: 28, child: TextField(controller: row['qty'], textAlign: TextAlign.center, style: const TextStyle(fontSize: 11), onChanged: (v) => _calculateRow(index), decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.zero)))),
+                                      const SizedBox(width: 4),
+                                      Expanded(flex: 1, child: SizedBox(height: 28, child: TextField(controller: row['height'], textAlign: TextAlign.center, style: const TextStyle(fontSize: 11), onChanged: (v) => _calculateRow(index), decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.zero)))),
+                                      const SizedBox(width: 4),
+                                      Expanded(flex: 1, child: SizedBox(height: 28, child: TextField(controller: row['width'], textAlign: TextAlign.center, style: const TextStyle(fontSize: 11), onChanged: (v) => _calculateRow(index), decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.zero)))),
+                                      const SizedBox(width: 4),
+                                      Expanded(flex: 1, child: SizedBox(height: 28, child: TextField(controller: row['area'], readOnly: true, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11), decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.zero)))),
+                                      const SizedBox(width: 4),
+                                      Expanded(flex: 1, child: SizedBox(height: 28, child: TextField(controller: row['sellPrice'], textAlign: TextAlign.center, style: const TextStyle(fontSize: 11), onChanged: (v) => _calculateRow(index), decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.zero)))),
+                                      const SizedBox(width: 4),
+                                      Expanded(flex: 1, child: SizedBox(height: 28, child: TextField(controller: row['costPrice'], textAlign: TextAlign.center, style: const TextStyle(fontSize: 11), onChanged: (v) => _calculateRow(index), decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.zero)))),
+                                      const SizedBox(width: 4),
+                                      Expanded(flex: 1, child: SizedBox(height: 28, child: TextField(controller: row['total'], readOnly: true, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11), decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.zero)))),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        flex: 1,
+                                        child: SizedBox(
+                                          height: 28,
+                                          child: OutlinedButton(
+                                            onPressed: () => _showImagesDialog(index),
+                                            style: OutlinedButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(30, 28)),
+                                            child: Text("صور (${(row['images'] as List).length})", style: const TextStyle(fontSize: 8)),
+                                          ),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Colors.red, size: 16),
+                                        onPressed: () {
+                                          setState(() {
+                                            if (measurementRows.length > 1) measurementRows.removeAt(index);
+                                          });
+                                        },
+                                      ),
+                                    ],
                                   ),
                                 );
                               },
@@ -679,26 +606,25 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                           Container(
                             color: const Color(0xFF6D28D9),
                             child: SingleChildScrollView(
-                              controller: _headerScrollController,
                               scrollDirection: Axis.horizontal,
                               child: ConstrainedBox(
-                                constraints: const BoxConstraints(minWidth: 1520),
+                                constraints: const BoxConstraints(minWidth: 1400),
                                 child: Row(
                                   children: const [
-                                    SizedBox(width: 70, child: Padding(padding: EdgeInsets.all(8.0), child: Text("الطلب", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 70, child: Padding(padding: EdgeInsets.all(8.0), child: Text("رقم الطلب", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
                                     SizedBox(width: 65, child: Padding(padding: EdgeInsets.all(8.0), child: Text("الكود", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 140, child: Padding(padding: EdgeInsets.all(8.0), child: Text("اسم العميل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 135, child: Padding(padding: EdgeInsets.all(8.0), child: Text("مكان العمل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 110, child: Padding(padding: EdgeInsets.all(8.0), child: Text("نوع العمل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 190, child: Padding(padding: EdgeInsets.all(8.0), child: Text("الخامة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 115, child: Padding(padding: EdgeInsets.all(8.0), child: Text("اسم العميل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 95, child: Padding(padding: EdgeInsets.all(8.0), child: Text("مكان العمل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 95, child: Padding(padding: EdgeInsets.all(8.0), child: Text("نوع العمل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 115, child: Padding(padding: EdgeInsets.all(8.0), child: Text("الخامة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
                                     SizedBox(width: 50, child: Padding(padding: EdgeInsets.all(8.0), child: Text("العدد", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
                                     SizedBox(width: 50, child: Padding(padding: EdgeInsets.all(8.0), child: Text("الطول", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 62, child: Padding(padding: EdgeInsets.all(8.0), child: Text("العرض", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 75, child: Padding(padding: EdgeInsets.all(8.0), child: Text("المساحة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 50, child: Padding(padding: EdgeInsets.all(8.0), child: Text("العرض", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 70, child: Padding(padding: EdgeInsets.all(8.0), child: Text("المساحة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
                                     SizedBox(width: 80, child: Padding(padding: EdgeInsets.all(8.0), child: Text("سعر البيع", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
                                     SizedBox(width: 75, child: Padding(padding: EdgeInsets.all(8.0), child: Text("التكلفة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 90, child: Padding(padding: EdgeInsets.all(8.0), child: Text("الإجمالي", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 100, child: Padding(padding: EdgeInsets.all(8.0), child: Text("التاريخ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 85, child: Padding(padding: EdgeInsets.all(8.0), child: Text("الإجمالي", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 90, child: Padding(padding: EdgeInsets.all(8.0), child: Text("التاريخ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
                                     SizedBox(width: 75, child: Padding(padding: EdgeInsets.all(8.0), child: Text("الصورة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
                                   ],
                                 ),
@@ -719,52 +645,51 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                                 if (docs.isEmpty) {
                                   return const Center(child: Text("لا توجد عروض أسعار محفوظة أونلاين حالياً"));
                                 }
-                                return SelectionArea(
-                                  child: Scrollbar(
+                                return Scrollbar(
+                                  controller: _horizontalScrollController,
+                                  thumbVisibility: true,
+                                  trackVisibility: true,
+                                  child: SingleChildScrollView(
                                     controller: _horizontalScrollController,
-                                    thumbVisibility: true,
-                                    trackVisibility: true,
-                                    child: SingleChildScrollView(
-                                      controller: _horizontalScrollController,
-                                      scrollDirection: Axis.horizontal,
-                                      child: ConstrainedBox(
-                                        constraints: const BoxConstraints(minWidth: 1520),
-                                        child: SizedBox(
-                                          width: 1520,
-                                          child: ListView.builder(
-                                            itemCount: docs.length,
-                                            itemBuilder: (context, index) {
-                                              final doc = docs[index];
-                                              final item = doc.data() as Map<String, dynamic>;
-                                              bool isSelected = selectedDocId == doc.id;
-                                              List imagesList = item['images'] ?? [];
-                                              return InkWell(
-                                                onTap: () {
-                                                  setState(() {
-                                                    selectedDocId = doc.id;
-                                                  });
-                                                },
-                                                child: Container(
-                                                  color: isSelected ? Colors.purple.shade100 : (index % 2 == 0 ? Colors.white : Colors.grey.shade50),
-                                                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
-                                                  child: Row(
-                                                    children: [
-                                                      SizedBox(width: 70, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['order'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                                      SizedBox(width: 65, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['code'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                                      SizedBox(width: 140, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['client'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                                      SizedBox(width: 135, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['location'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                                      SizedBox(width: 110, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['workType'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                                      SizedBox(width: 190, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['material'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                                      SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['qty'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                                      SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['height'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                                      SizedBox(width: 62, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['width'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                                      SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['area'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                                      SizedBox(width: 80, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['sell']), style: const TextStyle(fontSize: 11)))),
-                                                      SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['cost']), style: const TextStyle(fontSize: 11)))),
-                                                      SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['total']), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.purple, fontSize: 11)))),
-                                                      SizedBox(width: 100, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['date'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                                      SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("صور (${imagesList.length})", style: const TextStyle(fontSize: 11)))),
-                                                   ],
+                                    scrollDirection: Axis.horizontal,
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(minWidth: 1400),
+                                      child: SizedBox(
+                                        width: 1400,
+                                        child: ListView.builder(
+                                          itemCount: docs.length,
+                                          itemBuilder: (context, index) {
+                                            final doc = docs[index];
+                                            final item = doc.data() as Map<String, dynamic>;
+                                            bool isSelected = selectedDocId == doc.id;
+                                            List imagesList = item['images'] ?? [];
+                                            return InkWell(
+                                              onTap: () {
+                                                setState(() {
+                                                  selectedDocId = doc.id;
+                                                });
+                                              },
+                                              child: Container(
+                                                color: isSelected ? Colors.purple.shade100 : (index % 2 == 0 ? Colors.white : Colors.grey.shade50),
+                                                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+                                                child: Row(
+                                                  children: [
+                                                    SizedBox(width: 70, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['order'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 65, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['code'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 115, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['client'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 95, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['location'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 95, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['workType'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 115, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['material'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['qty'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['height'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['width'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 70, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['area'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 80, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['sell']), style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['cost']), style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 85, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['total']), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.purple, fontSize: 11)))),
+                                                    SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['date'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("صور (${imagesList.length})", style: const TextStyle(fontSize: 11)))),
+                                                  ],
                                                 ),
                                               ),
                                             );
