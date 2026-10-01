@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'app_data.dart';
 import 'login_screen.dart';
 import 'main_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 📱 تهيئة فايربيس للعمل أونلاين
+  await Firebase.initializeApp();
+
   // تحميل البيانات المحفوظة للتأكد من وجود مستخدمين أم لا
   await AppData.loadData();
   

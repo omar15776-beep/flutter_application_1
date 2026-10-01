@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'app_data.dart';
-import 'login_screen.dart';
 import 'orders_screen.dart';
 import 'quotations_screen.dart';
 import 'clients_report_screen.dart';

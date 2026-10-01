@@ -1,13 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'app_data.dart';
 
 class OrdersEntryScreen extends StatefulWidget {
   const OrdersEntryScreen({super.key});
 
   @override
-  _OrdersEntryScreenState createState() => _OrdersEntryScreenState();
+  State<OrdersEntryScreen> createState() => _OrdersEntryScreenState();
 }
 
 class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
@@ -19,9 +20,12 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
   
   String paymentType = "";
   String orderNum = "1";
-  String currentDate = "2026-09-14";
-  int? selectedSavedIndex;
+  final String currentDate = "2026-09-14";
+  
+  String? selectedDocId;
   final ScrollController _horizontalScrollController = ScrollController();
+
+  final CollectionReference ordersRef = FirebaseFirestore.instance.collection('orders');
 
   @override
   void initState() {
@@ -31,13 +35,16 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
     } else {
       paymentType = "نقدي";
     }
-    _normalizeAndAssignOrderNumbers();
-    _updateOrderNumber();
   }
 
   @override
   void dispose() {
     _horizontalScrollController.dispose();
+    clientController.dispose();
+    locationController.dispose();
+    codeController.dispose();
+    phoneController.dispose();
+    paidController.dispose();
     super.dispose();
   }
 
@@ -48,27 +55,6 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
     RegExp regExp = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
     segments[0] = segments[0].replaceAllMapped(regExp, (Match m) => '${m[1]},');
     return segments.join('.');
-  }
-
-  void _normalizeAndAssignOrderNumbers() {
-    Map<String, String> groupOrderMap = {};
-    int nextOrderNumber = 1;
-
-    for (var order in AppData.savedOrders) {
-      String client = (order['client'] ?? order['client_name'] ?? '').toString().trim();
-      String location = (order['location'] ?? order['work_location'] ?? '').toString().trim();
-      String workType = (order['workType'] ?? order['work_type'] ?? '').toString().trim();
-
-      if (client.isEmpty && location.isEmpty && workType.isEmpty) continue;
-
-      String uniqueKey = "$client|$location|$workType";
-
-      if (!groupOrderMap.containsKey(uniqueKey)) {
-        groupOrderMap[uniqueKey] = nextOrderNumber.toString();
-        nextOrderNumber++;
-      }
-      order['order'] = groupOrderMap[uniqueKey];
-    }
   }
 
   final List<Map<String, dynamic>> measurementRows = [
@@ -85,46 +71,6 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
       'images': <String>[],
     }
   ];
-
-  void _updateOrderNumber() {
-    String currentClient = clientController.text.trim();
-    String currentLocation = locationController.text.trim();
-    String currentWorkType = measurementRows.isNotEmpty ? measurementRows[0]['workType'].text.trim() : "";
-
-    if (currentClient.isEmpty || currentLocation.isEmpty || currentWorkType.isEmpty) {
-      return;
-    }
-
-    bool foundMatch = false;
-    String matchedOrderNum = "1";
-
-    for (var order in AppData.savedOrders) {
-      String savedClient = (order['client'] ?? order['client_name'] ?? '').toString().trim();
-      String savedLocation = (order['location'] ?? order['work_location'] ?? '').toString().trim();
-      String savedWorkType = (order['workType'] ?? order['work_type'] ?? '').toString().trim();
-
-      if (savedClient == currentClient && savedLocation == currentLocation && savedWorkType == currentWorkType) {
-        foundMatch = true;
-        matchedOrderNum = (order['order'] ?? order['order_num'] ?? '1').toString();
-        break;
-      }
-    }
-
-    setState(() {
-      if (foundMatch) {
-        orderNum = matchedOrderNum;
-      } else {
-        int maxOrd = 0;
-        for (var order in AppData.savedOrders) {
-          int? ordVal = int.tryParse((order['order'] ?? order['order_num'] ?? '0').toString());
-          if (ordVal != null && ordVal > maxOrd) {
-            maxOrd = ordVal;
-          }
-        }
-        orderNum = (maxOrd + 1).toString();
-      }
-    });
-  }
 
   void _addRow() {
     setState(() {
@@ -170,7 +116,7 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
   void _shiftOrder() async {
     double paid = double.tryParse(paidController.text) ?? 0;
     for (var row in measurementRows) {
-      AppData.savedOrders.add({
+      await ordersRef.add({
         'order': orderNum,
         'code': codeController.text,
         'client': clientController.text,
@@ -188,10 +134,10 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
         'method': paymentType,
         'date': currentDate,
         'images': List<String>.from(row['images']),
+        'createdAt': FieldValue.serverTimestamp(),
       });
     }
-    _normalizeAndAssignOrderNumbers();
-    await AppData.saveData();
+
     setState(() {
       clientController.clear();
       locationController.clear();
@@ -200,23 +146,24 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
       paidController.text = "0";
       measurementRows.clear();
       _addRow();
-      _updateOrderNumber();
     });
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم ترحيل وحفظ الطلب بنجاح")));
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم ترحيل وحفظ الطلب أونلاين بنجاح")));
   }
 
   void _deleteSelectedSaved() async {
-    if (selectedSavedIndex == null) {
+    if (selectedDocId == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("الرجاء تحديد سطر من السجلات المحفوظة أدناه للحذف")));
       return;
     }
+    await ordersRef.doc(selectedDocId).delete();
     setState(() {
-      AppData.savedOrders.removeAt(selectedSavedIndex!);
-      selectedSavedIndex = null;
-      _normalizeAndAssignOrderNumbers();
+      selectedDocId = null;
     });
-    await AppData.saveData();
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم حذف السطر وتحديث الحفظ الدائم")));
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم حذف السطر وتحديث السحابة")));
   }
 
   void _showImagesDialog(int index) {
@@ -369,7 +316,7 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF0F172A),
-        title: const Text("شاشة إدخال البيانات ومقاسات الطلبات", style: TextStyle(color: Colors.white, fontSize: 16)),
+        title: const Text("شاشة إدخال البيانات ومقاسات الطلبات (أونلاين)", style: TextStyle(color: Colors.white, fontSize: 16)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -379,7 +326,6 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
         textDirection: TextDirection.rtl,
         child: Padding(
           padding: const EdgeInsets.all(12.0),
-          // 📱 تمرير عمودي شامل للشاشة بالكامل لتجنب أي مشاكل Overflow على الموبايل
           child: SingleChildScrollView(
             scrollDirection: Axis.vertical,
             child: SizedBox(
@@ -416,7 +362,6 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
                                         clientController.text = selection['name']!;
                                         codeController.text = selection['code']!;
                                         phoneController.text = selection['phone']!;
-                                        _updateOrderNumber();
                                       });
                                     },
                                     fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
@@ -428,12 +373,7 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
                                         focusNode: focusNode,
                                         decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
                                         style: const TextStyle(fontSize: 12),
-                                        onChanged: (val) {
-                                          setState(() {
-                                            clientController.text = val;
-                                            _updateOrderNumber();
-                                          });
-                                        },
+                                        onChanged: (val) => clientController.text = val,
                                       );
                                     },
                                   ),
@@ -452,11 +392,6 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
                                   height: 32,
                                   child: TextField(
                                     controller: locationController,
-                                    onChanged: (v) {
-                                      setState(() {
-                                        _updateOrderNumber();
-                                      });
-                                    },
                                     decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
                                   ),
                                 ),
@@ -493,7 +428,7 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
                                 child: SizedBox(
                                   height: 32,
                                   child: DropdownButtonFormField<String>(
-                                    value: AppData.methods.any((m) => m['name'] == paymentType)
+                                    initialValue: AppData.methods.any((m) => m['name'] == paymentType)
                                         ? paymentType
                                         : (AppData.methods.isNotEmpty ? AppData.methods[0]['name'] : null),
                                     isExpanded: true,
@@ -600,11 +535,6 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
                                           height: 28,
                                           child: TextField(
                                             controller: row['workType'],
-                                            onChanged: (val) {
-                                              setState(() {
-                                                _updateOrderNumber();
-                                              });
-                                            },
                                             decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 0)),
                                             style: const TextStyle(fontSize: 11),
                                           ),
@@ -707,14 +637,14 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
                       ElevatedButton.icon(
                         onPressed: _shiftOrder,
                         icon: const Icon(Icons.save, size: 16),
-                        label: const Text("ترحيل جميع البنود للطلب", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        label: const Text("ترحيل جميع البنود للطلب أونلاين", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 6)),
                       ),
                       const SizedBox(width: 15),
                       ElevatedButton.icon(
                         onPressed: _deleteSelectedSaved,
                         icon: const Icon(Icons.delete_sweep, size: 16),
-                        label: const Text("مسح المحددة من المحفوظات", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        label: const Text("مسح المحددة من السحابة", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 6)),
                       ),
                     ],
@@ -742,14 +672,13 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
                               ),
                             ),
                             child: const Text(
-                              "📊 السجلات المحفوظة مؤخراً في قاعدة البيانات (تحديد سطر للحذف)",
+                              "📊 السجلات المحفوظة أونلاين في Cloud Firestore (تحديد سطر للحذف)",
                               style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
                             ),
                           ),
                           Container(
                             color: const Color(0xFF475569),
                             child: SingleChildScrollView(
-                              controller: ScrollController(),
                               scrollDirection: Axis.horizontal,
                               child: ConstrainedBox(
                                 constraints: const BoxConstraints(minWidth: 1400),
@@ -778,60 +707,76 @@ class _OrdersEntryScreenState extends State<OrdersEntryScreen> {
                             ),
                           ),
                           Expanded(
-                            child: Scrollbar(
-                              controller: _horizontalScrollController,
-                              thumbVisibility: true,
-                              trackVisibility: true,
-                              child: SingleChildScrollView(
-                                controller: _horizontalScrollController,
-                                scrollDirection: Axis.horizontal,
-                                child: ConstrainedBox(
-                                  constraints: const BoxConstraints(minWidth: 1400),
-                                  child: SizedBox(
-                                    width: 1400,
-                                    child: ListView.builder(
-                                      itemCount: AppData.savedOrders.length,
-                                      itemBuilder: (context, index) {
-                                        final item = AppData.savedOrders[index];
-                                        bool isSelected = selectedSavedIndex == index;
-                                        List imagesList = item['images'] ?? [];
-                                        return InkWell(
-                                          onTap: () {
-                                            setState(() {
-                                              selectedSavedIndex = index;
-                                            });
+                            child: StreamBuilder<QuerySnapshot>(
+                              stream: ordersRef.orderBy('createdAt', descending: true).snapshots(),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasError) {
+                                  return const Center(child: Text("حدث خطأ في تحميل السجلات"));
+                                }
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return const Center(child: CircularProgressIndicator());
+                                }
+                                final docs = snapshot.data!.docs;
+                                if (docs.isEmpty) {
+                                  return const Center(child: Text("لا توجد سجلات محفوظة أونلاين حالياً"));
+                                }
+                                return Scrollbar(
+                                  controller: _horizontalScrollController,
+                                  thumbVisibility: true,
+                                  trackVisibility: true,
+                                  child: SingleChildScrollView(
+                                    controller: _horizontalScrollController,
+                                    scrollDirection: Axis.horizontal,
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(minWidth: 1400),
+                                      child: SizedBox(
+                                        width: 1400,
+                                        child: ListView.builder(
+                                          itemCount: docs.length,
+                                          itemBuilder: (context, index) {
+                                            final doc = docs[index];
+                                            final item = doc.data() as Map<String, dynamic>;
+                                            bool isSelected = selectedDocId == doc.id;
+                                            List imagesList = item['images'] ?? [];
+                                            return InkWell(
+                                              onTap: () {
+                                                setState(() {
+                                                  selectedDocId = doc.id;
+                                                });
+                                              },
+                                              child: Container(
+                                                color: isSelected ? Colors.blue.shade100 : (index % 2 == 0 ? Colors.white : Colors.grey.shade50),
+                                                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+                                                child: Row(
+                                                  children: [
+                                                    SizedBox(width: 70, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['order'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 65, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['code'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 115, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['client'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 95, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['location'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 95, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['workType'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 115, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['material'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['qty'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['height'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['width'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 70, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['area'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 80, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['sell']), style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['cost']), style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 85, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['total']), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 11)))),
+                                                    SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['paid'] ?? '0'), style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 85, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['method'] ?? 'نقدي'}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['date'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("صور (${imagesList.length})", style: const TextStyle(fontSize: 11)))),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
                                           },
-                                          child: Container(
-                                            color: isSelected ? Colors.blue.shade100 : (index % 2 == 0 ? Colors.white : Colors.grey.shade50),
-                                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
-                                            child: Row(
-                                              children: [
-                                                SizedBox(width: 70, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['order']}", style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 65, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['code']}", style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 115, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['client']}", style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 95, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['location']}", style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 95, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['workType']}", style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 115, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['material']}", style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['qty']}", style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['height']}", style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0),child: Text("${item['width']}", style: const TextStyle(fontSize: 11)))), // تم التصحيح
-                                                SizedBox(width: 70, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['area']}", style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 80, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['sell']), style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['cost']), style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 85, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['total']), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 11)))),
-                                                SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['paid'] ?? '0'), style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 85, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['method'] ?? 'نقدي'}", style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['date']}", style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("صور (${imagesList.length})", style: const TextStyle(fontSize: 11)))),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             ),
                           ),
                         ],

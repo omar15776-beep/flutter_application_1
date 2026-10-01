@@ -485,7 +485,7 @@ class _SettingsScreenState extends State {
                                   final user = AppData.users[index];
                                   return ListTile(
                                     dense: true,
-                                    title: Text("المستخدم: (\({user['username']} (\){user['role']}))"),
+                                    title: Text("المستخدم: (({user['username']} (){user['role']}))"),
                                     trailing: IconButton(
                                       icon: const Icon(Icons.delete, color: Colors.red, size: 18),
                                       onPressed: () async {

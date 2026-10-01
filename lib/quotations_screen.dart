@@ -1,13 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'app_data.dart';
 
 class QuotationsEntryScreen extends StatefulWidget {
   const QuotationsEntryScreen({super.key});
 
   @override
-  _QuotationsEntryScreenState createState() => _QuotationsEntryScreenState();
+  State<QuotationsEntryScreen> createState() => _QuotationsEntryScreenState();
 }
 
 class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
@@ -17,16 +18,17 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
   final TextEditingController phoneController = TextEditingController();
   
   String orderNum = "1";
-  String currentDate = "2026-09-17";
-  int? selectedSavedIndex;
+  final String currentDate = "2026-09-17";
+  String? selectedDocId;
+  
   final ScrollController _horizontalScrollController = ScrollController();
   final ScrollController _headerScrollController = ScrollController();
+
+  final CollectionReference quotationsRef = FirebaseFirestore.instance.collection('quotations');
 
   @override
   void initState() {
     super.initState();
-    _normalizeAndAssignOrderNumbers();
-    _updateOrderNumber();
     _horizontalScrollController.addListener(() {
       if (_headerScrollController.hasClients && _headerScrollController.offset != _horizontalScrollController.offset) {
         _headerScrollController.jumpTo(_horizontalScrollController.offset);
@@ -43,6 +45,10 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
   void dispose() {
     _horizontalScrollController.dispose();
     _headerScrollController.dispose();
+    clientController.dispose();
+    locationController.dispose();
+    codeController.dispose();
+    phoneController.dispose();
     super.dispose();
   }
 
@@ -53,27 +59,6 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
     RegExp regExp = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
     segments[0] = segments[0].replaceAllMapped(regExp, (Match m) => '${m[1]},');
     return segments.join('.');
-  }
-
-  void _normalizeAndAssignOrderNumbers() {
-    Map<String, String> groupOrderMap = {};
-    int nextOrderNumber = 1;
-
-    for (var order in AppData.savedQuotations) {
-      String client = (order['client'] ?? order['client_name'] ?? '').toString().trim();
-      String location = (order['location'] ?? order['work_location'] ?? '').toString().trim();
-      String workType = (order['workType'] ?? order['work_type'] ?? '').toString().trim();
-
-      if (client.isEmpty && location.isEmpty && workType.isEmpty) continue;
-
-      String uniqueKey = "$client|$location|$workType";
-
-      if (!groupOrderMap.containsKey(uniqueKey)) {
-        groupOrderMap[uniqueKey] = nextOrderNumber.toString();
-        nextOrderNumber++;
-      }
-      order['order'] = groupOrderMap[uniqueKey];
-    }
   }
 
   final List<Map<String, dynamic>> measurementRows = [
@@ -90,46 +75,6 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
       'images': <String>[],
     }
   ];
-
-  void _updateOrderNumber() {
-    String currentClient = clientController.text.trim();
-    String currentLocation = locationController.text.trim();
-    String currentWorkType = measurementRows.isNotEmpty ? measurementRows[0]['workType'].text.trim() : "";
-
-    if (currentClient.isEmpty || currentLocation.isEmpty || currentWorkType.isEmpty) {
-      return;
-    }
-
-    bool foundMatch = false;
-    String matchedOrderNum = "1";
-
-    for (var order in AppData.savedQuotations) {
-      String savedClient = (order['client'] ?? order['client_name'] ?? '').toString().trim();
-      String savedLocation = (order['location'] ?? order['work_location'] ?? '').toString().trim();
-      String savedWorkType = (order['workType'] ?? order['work_type'] ?? '').toString().trim();
-
-      if (savedClient == currentClient && savedLocation == currentLocation && savedWorkType == currentWorkType) {
-        foundMatch = true;
-        matchedOrderNum = (order['order'] ?? order['order_num'] ?? '1').toString();
-        break;
-      }
-    }
-
-    setState(() {
-      if (foundMatch) {
-        orderNum = matchedOrderNum;
-      } else {
-        int maxOrd = 0;
-        for (var order in AppData.savedQuotations) {
-          int? ordVal = int.tryParse((order['order'] ?? order['order_num'] ?? '0').toString());
-          if (ordVal != null && ordVal > maxOrd) {
-            maxOrd = ordVal;
-          }
-        }
-        orderNum = (maxOrd + 1).toString();
-      }
-    });
-  }
 
   void _addRow() {
     setState(() {
@@ -174,7 +119,7 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
 
   void _shiftOrder() async {
     for (var row in measurementRows) {
-      AppData.savedQuotations.add({
+      await quotationsRef.add({
         'order': orderNum,
         'code': codeController.text,
         'client': clientController.text,
@@ -190,10 +135,10 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
         'total': row['total'].text,
         'date': currentDate,
         'images': List<String>.from(row['images']),
+        'createdAt': FieldValue.serverTimestamp(),
       });
     }
-    _normalizeAndAssignOrderNumbers();
-    await AppData.saveData();
+
     setState(() {
       clientController.clear();
       locationController.clear();
@@ -201,29 +146,27 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
       phoneController.clear();
       measurementRows.clear();
       _addRow();
-      _updateOrderNumber();
     });
+
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم ترحيل وحفظ عرض السعر بنجاح")));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم ترحيل وحفظ عرض السعر أونلاين بنجاح")));
   }
 
   void _deleteSelectedSaved() async {
-    if (selectedSavedIndex == null) {
+    if (selectedDocId == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("الرجاء تحديد سطر من عروض الأسعار المحفوظة أدناه للحذف")));
       return;
     }
+    await quotationsRef.doc(selectedDocId).delete();
     setState(() {
-      AppData.savedQuotations.removeAt(selectedSavedIndex!);
-      selectedSavedIndex = null;
-      _normalizeAndAssignOrderNumbers();
+      selectedDocId = null;
     });
-    await AppData.saveData();
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم حذف السطر وتحديث الحفظ الدائم للعروض")));
-  }
 
-  void _showImagesDialog(int index) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم حذف السطر وتحديث السحابة للعروض")));
+  }
+ void _showImagesDialog(int index) {
     final row = measurementRows[index];
     List<String> images = List<String>.from(row['images']);
 
@@ -273,7 +216,6 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                                 itemCount: images.length,
                                 itemBuilder: (context, imgIdx) {
                                   String imgData = images[imgIdx];
-
                                   return Card(
                                     margin: const EdgeInsets.symmetric(vertical: 4),
                                     child: ListTile(
@@ -372,7 +314,7 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF581C87),
-        title: const Text("شاشة إدخال بيانات وعروض الأسعار", style: TextStyle(color: Colors.white, fontSize: 16)),
+        title: const Text("شاشة إدخال بيانات وعروض الأسعار (أونلاين)", style: TextStyle(color: Colors.white, fontSize: 16)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -382,7 +324,6 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
         textDirection: TextDirection.rtl,
         child: Padding(
           padding: const EdgeInsets.all(12.0),
-          // 📱 تفعيل التمرير العمودي الشامل للصفحة لتناسب الموبايل والشاشات الصغيرة
           child: SingleChildScrollView(
             scrollDirection: Axis.vertical,
             child: SizedBox(
@@ -419,7 +360,6 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                                         clientController.text = selection['name']!;
                                         codeController.text = selection['code']!;
                                         phoneController.text = selection['phone']!;
-                                        _updateOrderNumber();
                                       });
                                     },
                                     fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
@@ -431,12 +371,7 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                                         focusNode: focusNode,
                                         decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
                                         style: const TextStyle(fontSize: 12),
-                                        onChanged: (val) {
-                                          setState(() {
-                                            clientController.text = val;
-                                            _updateOrderNumber();
-                                          });
-                                        },
+                                        onChanged: (val) => clientController.text = val,
                                       );
                                     },
                                   ),
@@ -455,11 +390,6 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                                   height: 32,
                                   child: TextField(
                                     controller: locationController,
-                                    onChanged: (v) {
-                                      setState(() {
-                                        _updateOrderNumber();
-                                      });
-                                    },
                                     decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
                                   ),
                                 ),
@@ -568,7 +498,7 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                                     SizedBox(width: 70, child: Text("سعر التكلفة", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
                                     SizedBox(width: 80, child: Text("الإجمالي", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
                                     SizedBox(width: 50, child: Text("صورة", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
-                                    SizedBox(width: 30),
+                                    SizedBox(width: 30, child: Text("")),
                                   ],
                                 ),
                               ),
@@ -603,11 +533,6 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                                               height: 28,
                                               child: TextField(
                                                 controller: row['workType'],
-                                                onChanged: (val) {
-                                                  setState(() {
-                                                    _updateOrderNumber();
-                                                  });
-                                                },
                                                 decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 0)),
                                                 style: const TextStyle(fontSize: 11),
                                               ),
@@ -712,14 +637,14 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                       ElevatedButton.icon(
                         onPressed: _shiftOrder,
                         icon: const Icon(Icons.save, size: 16),
-                        label: const Text("ترحيل جميع البنود للعرض", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        label: const Text("ترحيل جميع البنود للعرض أونلاين", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 6)),
                       ),
                       const SizedBox(width: 15),
                       ElevatedButton.icon(
                         onPressed: _deleteSelectedSaved,
                         icon: const Icon(Icons.delete_sweep, size: 16),
-                        label: const Text("مسح المحددة من المحفوظات", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        label: const Text("مسح المحددة من السحابة", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 6)),
                       ),
                     ],
@@ -747,7 +672,7 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                               ),
                             ),
                             child: const Text(
-                              "📊 عروض الأسعار المحفوظة مؤخراً (تحديد سطر للحذف)",
+                              "📊 عروض الأسعار المحفوظة أونلاين في Cloud Firestore (تحديد سطر للحذف)",
                               style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
                             ),
                           ),
@@ -773,7 +698,7 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                                     SizedBox(width: 80, child: Padding(padding: EdgeInsets.all(8.0), child: Text("سعر البيع", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
                                     SizedBox(width: 75, child: Padding(padding: EdgeInsets.all(8.0), child: Text("التكلفة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
                                     SizedBox(width: 90, child: Padding(padding: EdgeInsets.all(8.0), child: Text("الإجمالي", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 100, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("التاريخ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                    SizedBox(width: 100, child: Padding(padding: EdgeInsets.all(8.0), child: Text("التاريخ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
                                     SizedBox(width: 75, child: Padding(padding: EdgeInsets.all(8.0), child: Text("الصورة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
                                   ],
                                 ),
@@ -781,60 +706,75 @@ class _QuotationsEntryScreenState extends State<QuotationsEntryScreen> {
                             ),
                           ),
                           Expanded(
-                            child: SelectionArea(
-                              child: Scrollbar(
-                                controller: _horizontalScrollController,
-                                thumbVisibility: true,
-                                trackVisibility: true,
-                                child: SingleChildScrollView(
-                                  controller: _horizontalScrollController,
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: const BoxConstraints(minWidth: 1520),
-                                    child: SizedBox(
-                                      width: 1520,
-                                      child: ListView.builder(
-                                        itemCount: AppData.savedQuotations.length,
-                                        itemBuilder: (context, index) {
-                                          final item = AppData.savedQuotations[index];
-                                          bool isSelected = selectedSavedIndex == index;
-                                          List imagesList = item['images'] ?? [];
-                                          return InkWell(
-                                            onTap: () {
-                                              setState(() {
-                                                selectedSavedIndex = index;
-                                              });
-                                            },
-                                            child: Container(
-                                              color: isSelected ? Colors.purple.shade100 : (index % 2 == 0 ? Colors.white : Colors.grey.shade50),
-                                              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
-                                              child: Row(
-                                                children: [
-                                                  SizedBox(width: 70, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['order']}", style: const TextStyle(fontSize: 11)))),
-                                                  SizedBox(width: 65, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['code']}", style: const TextStyle(fontSize: 11)))),
-                                                  SizedBox(width: 140, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['client']}", style: const TextStyle(fontSize: 11)))),
-                                                  SizedBox(width: 135, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['location']}", style: const TextStyle(fontSize: 11)))),
-                                                  SizedBox(width: 110, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['workType']}", style: const TextStyle(fontSize: 11)))),
-                                                  SizedBox(width: 190, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['material']}", style: const TextStyle(fontSize: 11)))),
-                                                  SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['qty']}", style: const TextStyle(fontSize: 11)))),
-                                                  SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['height']}", style: const TextStyle(fontSize: 11)))),
-                                                  SizedBox(width: 62, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['width']}", style: const TextStyle(fontSize: 11)))),
-                                                  SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['area']}", style: const TextStyle(fontSize: 11)))),
-                                                  SizedBox(width: 80, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['sell']), style: const TextStyle(fontSize: 11)))),
-                                                  SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['cost']), style: const TextStyle(fontSize: 11)))),
-                                                  SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['total']), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.purple, fontSize: 11)))),
-                                                  SizedBox(width: 100, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['date']}", style: const TextStyle(fontSize: 11)))),
-                                                  SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("صور (${imagesList.length})", style: const TextStyle(fontSize: 11)))),
-                                                ],
+                            child: StreamBuilder<QuerySnapshot>(
+                              stream: quotationsRef.orderBy('createdAt', descending: true).snapshots(),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasError) {
+                                  return const Center(child: Text("حدث خطأ في تحميل عروض الأسعار"));
+                                }
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return const Center(child: CircularProgressIndicator());
+                                }
+                                final docs = snapshot.data!.docs;
+                                if (docs.isEmpty) {
+                                  return const Center(child: Text("لا توجد عروض أسعار محفوظة أونلاين حالياً"));
+                                }
+                                return SelectionArea(
+                                  child: Scrollbar(
+                                    controller: _horizontalScrollController,
+                                    thumbVisibility: true,
+                                    trackVisibility: true,
+                                    child: SingleChildScrollView(
+                                      controller: _horizontalScrollController,
+                                      scrollDirection: Axis.horizontal,
+                                      child: ConstrainedBox(
+                                        constraints: const BoxConstraints(minWidth: 1520),
+                                        child: SizedBox(
+                                          width: 1520,
+                                          child: ListView.builder(
+                                            itemCount: docs.length,
+                                            itemBuilder: (context, index) {
+                                              final doc = docs[index];
+                                              final item = doc.data() as Map<String, dynamic>;
+                                              bool isSelected = selectedDocId == doc.id;
+                                              List imagesList = item['images'] ?? [];
+                                              return InkWell(
+                                                onTap: () {
+                                                  setState(() {
+                                                    selectedDocId = doc.id;
+                                                  });
+                                                },
+                                                child: Container(
+                                                  color: isSelected ? Colors.purple.shade100 : (index % 2 == 0 ? Colors.white : Colors.grey.shade50),
+                                                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+                                                  child: Row(
+                                                    children: [
+                                                      SizedBox(width: 70, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['order'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                      SizedBox(width: 65, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['code'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                      SizedBox(width: 140, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['client'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                      SizedBox(width: 135, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['location'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                      SizedBox(width: 110, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['workType'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                      SizedBox(width: 190, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['material'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                      SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['qty'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                      SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['height'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                      SizedBox(width: 62, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['width'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                      SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['area'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                      SizedBox(width: 80, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['sell']), style: const TextStyle(fontSize: 11)))),
+                                                      SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['cost']), style: const TextStyle(fontSize: 11)))),
+                                                      SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['total']), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.purple, fontSize: 11)))),
+                                                      SizedBox(width: 100, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['date'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                      SizedBox(width: 75, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("صور (${imagesList.length})", style: const TextStyle(fontSize: 11)))),
+                                                   ],
+                                                ),
                                               ),
-                                            ),
-                                          );
-                                        },
+                                            );
+                                          },
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             ),
                           ),
                         ],
