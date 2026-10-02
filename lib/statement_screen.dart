@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart' as pw;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'app_data.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class StatementScreen extends StatefulWidget {
   const StatementScreen({super.key});
@@ -118,30 +119,31 @@ class _StatementScreenState extends State<StatementScreen> {
     });
   }
 
-  List<Map<String, dynamic>> _getFilteredData() {
-    if (selectedClient == null || selectedClient!.isEmpty) {
-      return [];
-    }
-
-    List<Map<String, dynamic>> clientFiltered = AppData.savedOrders.where((item) {
-      String client = (item['client'] ?? item['client_name'] ?? '').toString();
-      return client.contains(selectedClient!);
-    }).toList();
-
-    return clientFiltered.where((item) {
-      String loc = (item['location'] ?? item['work_location'] ?? '').toString();
-      bool matchesLocation = selectedLocation == null || selectedLocation!.isEmpty || loc == selectedLocation;
-      
-      String ord = (item['order'] ?? item['order_num'] ?? '').toString();
-      bool matchesOrder = selectedOrderNum == null || selectedOrderNum!.isEmpty || ord == selectedOrderNum;
-      
-      String itemDate = (item['date'] ?? item['created_date'] ?? '').toString();
-      bool matchesDateFrom = selectedDateFrom == null || selectedDateFrom!.isEmpty || itemDate.compareTo(selectedDateFrom!) >= 0;
-      bool matchesDateTo = selectedDateTo == null || selectedDateTo!.isEmpty || itemDate.compareTo(selectedDateTo!) <= 0;
-
-      return matchesLocation && matchesOrder && matchesDateFrom && matchesDateTo;
-    }).toList();
+  // استبدل دالة _getFilteredData القديمة بهذه الدالة لتعتمد على البيانات السحابية مباشرة
+  List<Map<String, dynamic>> _getFilteredData(List<Map<String, dynamic>> allCloudOrders) {
+  if (selectedClient == null || selectedClient!.isEmpty) {
+    return [];
   }
+
+  List<Map<String, dynamic>> clientFiltered = allCloudOrders.where((item) {
+    String client = (item['client'] ?? item['client_name'] ?? '').toString();
+    return client.contains(selectedClient!);
+  }).toList();
+
+  return clientFiltered.where((item) {
+    String loc = (item['location'] ?? item['work_location'] ?? '').toString();
+    bool matchesLocation = selectedLocation == null || selectedLocation!.isEmpty || loc == selectedLocation;
+    
+    String ord = (item['order'] ?? item['order_num'] ?? '').toString();
+    bool matchesOrder = selectedOrderNum == null || selectedOrderNum!.isEmpty || ord == selectedOrderNum;
+    
+    String itemDate = (item['date'] ?? item['created_date'] ?? '').toString();
+    bool matchesDateFrom = selectedDateFrom == null || selectedDateFrom!.isEmpty || itemDate.compareTo(selectedDateFrom!) >= 0;
+    bool matchesDateTo = selectedDateTo == null || selectedDateTo!.isEmpty || itemDate.compareTo(selectedDateTo!) <= 0;
+
+    return matchesLocation && matchesOrder && matchesDateFrom && matchesDateTo;
+  }).toList();
+}
 
   Map<String, double> _calculateGroupTotals(List<Map<String, dynamic>> rows) {
     Map<String, double> groupTotals = {};
@@ -462,7 +464,11 @@ class _StatementScreenState extends State<StatementScreen> {
   }
 
   void _exportStatementPdf() async {
-    List<Map<String, dynamic>> rawRows = _getFilteredData();
+    // جلب البيانات مباشرة من سحابة فايربيس للـ PDF
+    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('orders').get();
+    List<Map<String, dynamic>> allCloudOrders = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+
+    List<Map<String, dynamic>> rawRows = _getFilteredData(allCloudOrders);
     if (rawRows.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("لا توجد بيانات معروضة لتصديرها إلى PDF")));
@@ -552,7 +558,6 @@ class _StatementScreenState extends State<StatementScreen> {
                 ),
               pw.SizedBox(height: 15),
 
-              // الشريط العلوي
               pw.Header(
                 level: 0,
                 child: pw.Row(
@@ -565,7 +570,6 @@ class _StatementScreenState extends State<StatementScreen> {
               ),
               pw.SizedBox(height: 10),
 
-              // جدول الـ PDF مع إضافة عمود "إجمالي حساب العمل" في نهاية الصفوف بعد التاريخ (أقصى اليمين)
               pw.Table.fromTextArray(
                 headerStyle: pw.TextStyle(font: fontBold, fontWeight: pw.FontWeight.bold, color: pw.PdfColors.white, fontSize: pdfHeaderTableFontSize),
                 headerDecoration: pw.BoxDecoration(color: pw.PdfColor.fromInt(pdfHeaderColor.toARGB32())),
@@ -573,18 +577,18 @@ class _StatementScreenState extends State<StatementScreen> {
                 cellAlignment: pw.Alignment.center,
                 cellHeight: pdfRowHeight,
                 columnWidths: {
-                  0: const pw.FixedColumnWidth(110.0), // إجمالي حساب العمل
-                  1: const pw.FixedColumnWidth(65.0),  // التاريخ
-                  2: const pw.FixedColumnWidth(65.0),  // نوع الدفع
-                  3: const pw.FixedColumnWidth(70.0),  // المدفوعات
-                  4: const pw.FixedColumnWidth(60.0),  // الحساب
-                  5: const pw.FixedColumnWidth(60.0),  // السعر
-                  6: const pw.FixedColumnWidth(45.0),  // المساحة
-                  7: const pw.FixedColumnWidth(90.0),  // العدد
-                  8: const pw.FixedColumnWidth(85.0),  // نوع الخامة
-                  9: const pw.FixedColumnWidth(85.0),  // بيان العمل
-                  10: const pw.FixedColumnWidth(30.0), // مكان العمل
-                  11: const pw.FixedColumnWidth(30.0), // م
+                  0: const pw.FixedColumnWidth(110.0),
+                  1: const pw.FixedColumnWidth(65.0),
+                  2: const pw.FixedColumnWidth(65.0),
+                  3: const pw.FixedColumnWidth(70.0),
+                  4: const pw.FixedColumnWidth(60.0),
+                  5: const pw.FixedColumnWidth(60.0),
+                  6: const pw.FixedColumnWidth(45.0),
+                  7: const pw.FixedColumnWidth(90.0),
+                  8: const pw.FixedColumnWidth(85.0),
+                  9: const pw.FixedColumnWidth(85.0),
+                  10: const pw.FixedColumnWidth(30.0),
+                  11: const pw.FixedColumnWidth(30.0),
                 },
                 headers: [
                   'إجمالي حساب العمل', 
@@ -623,7 +627,7 @@ class _StatementScreenState extends State<StatementScreen> {
                   String paidVal = _formatMoney(item['paid'] ?? item['paid_amount'] ?? item['payment'] ?? '0');
 
                   return [
-                    groupWorkTotalStr, // إجمالي حساب العمل (في البداية يمين الـ RTL)
+                    groupWorkTotalStr,
                     "${item['date'] ?? item['created_date'] ?? ''}",
                     payTypeVal,
                     paidVal,
@@ -640,7 +644,6 @@ class _StatementScreenState extends State<StatementScreen> {
               ),
               pw.SizedBox(height: 15),
 
-              // شريط الإجماليات السفلي
               pw.Container(
                 padding: const pw.EdgeInsets.all(6),
                 decoration: pw.BoxDecoration(color: pw.PdfColor.fromInt(pdfTotalsBarColor.toARGB32())),
@@ -654,7 +657,6 @@ class _StatementScreenState extends State<StatementScreen> {
                 ),
               ),
 
-              // ملاحظات إضافية
               if (pdfFooterNotes.isNotEmpty) ...[
                 pw.SizedBox(height: 15),
                 pw.Container(
@@ -704,380 +706,397 @@ class _StatementScreenState extends State<StatementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    List<String> allClients = AppData.savedOrders
-        .map((e) => (e['client'] ?? e['client_name'] ?? '').toString())
-        .where((e) => e.isNotEmpty)
-        .toSet()
-        .toList();
-
-    List<Map<String, dynamic>> clientRows = selectedClient == null || selectedClient!.isEmpty
-        ? []
-        : AppData.savedOrders.where((e) => (e['client'] ?? e['client_name'] ?? '').toString().contains(selectedClient!)).toList();
-
-    List<String> locationsList = clientRows.map((e) => (e['location'] ?? e['work_location'] ?? '').toString()).where((e) => e.isNotEmpty).toSet().toList();
-    List<String> datesList = clientRows.map((e) => (e['date'] ?? e['created_date'] ?? '').toString()).where((e) => e.isNotEmpty).toSet().toList();
-    List<String> orderNumbers = clientRows.map((e) => (e['order'] ?? e['order_num'] ?? '').toString()).where((e) => e.isNotEmpty).toSet().toList();
-
-    List<Map<String, dynamic>> rawFilteredList = _getFilteredData();
-    List<Map<String, dynamic>> filteredList = _processSummaryRows(rawFilteredList);
-
-    Map<String, double> groupTotals = _calculateGroupTotals(filteredList);
-    Map<String, bool> groupFirstSeen = {};
-
-    double totalAccount = 0;
-    double totalPaid = 0;
-    for (var item in rawFilteredList) {
-      totalAccount += double.tryParse((item['total'] ?? item['total_amount'] ?? '0').toString()) ?? 0;
-      totalPaid += double.tryParse((item['paid'] ?? item['paid_amount'] ?? item['payment'] ?? '0').toString()) ?? 0;
-    }
-    double totalRemaining = totalAccount - totalPaid;
-
-    const double tableMinWidth = 1750.0;
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF1E3A8A),
-        title: const Text("شاشة الفاتورة وكشف الحساب التفصيلي - المؤسسة التجارية", style: TextStyle(color: Colors.white, fontSize: 16)),
+        title: const Text("شاشة الفاتورة وكشف الحساب التفصيلي (سحابي)", style: TextStyle(color: Colors.white, fontSize: 16)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Directionality(
-        textDirection: TextDirection.rtl,
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          // 📱 تفعيل التمرير العمودي الشامل للصفحة لتناسب الموبايل والشاشات الصغيرة
-          child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height * 0.88,
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3)],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: SizedBox(
-                                      height: 36,
-                                      child: Autocomplete<String>(
-                                        optionsBuilder: (TextEditingValue textEditingValue) {
-                                          if (textEditingValue.text.isEmpty) {
-                                            return allClients;
-                                          }
-                                          return allClients.where((c) => c.contains(textEditingValue.text));
-                                        },
-                                        onSelected: (String selection) {
-                                          _onClientSelected(selection);
-                                        },
-                                        fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                                          if (controller.text.isEmpty && selectedClient != null) {
-                                            controller.text = selectedClient!;
-                                          }
-                                          return TextField(
-                                            controller: controller,
-                                            focusNode: focusNode,
-                                            decoration: const InputDecoration(
-                                              hintText: "اسم العميل",
-                                              hintStyle: TextStyle(fontSize: 11),
-                                              border: OutlineInputBorder(),
-                                              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                                            ),
-                                            style: const TextStyle(fontSize: 11),
-                                            onChanged: (val) {
-                                              setState(() {
-                                                selectedClient = val.isEmpty ? null : val;
-                                                selectedLocation = null;
-                                                selectedOrderNum = null;
-                                              });
-                                            },
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: SizedBox(
-                                      height: 36,
-                                      child: DropdownButtonFormField<String>(
-                                        initialValue: selectedDateFrom,
-                                        isExpanded: true,
-                                        hint: const Text("تاريخ البداية", style: TextStyle(fontSize: 11)),
-                                        items: datesList.map((d) => DropdownMenuItem(value: d, child: Text(d, style: TextStyle(fontSize: 11)))).toList(),
-                                        onChanged: (val) => setState(() => selectedDateFrom = val),
-                                        decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: SizedBox(
-                                      height: 36,
-                                      child: DropdownButtonFormField<String>(
-                                        initialValue: selectedOrderNum,
-                                        isExpanded: true,
-                                        hint: const Text("رقم الطلب", style: TextStyle(fontSize: 11)),
-                                        items: orderNumbers.map((ord) => DropdownMenuItem(value: ord, child: Text(ord, style: TextStyle(fontSize: 11)))).toList(),
-                                        onChanged: (val) => setState(() => selectedOrderNum = val),
-                                        decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: SizedBox(
-                                      height: 36,
-                                      child: DropdownButtonFormField<String>(
-                                        initialValue: selectedLocation,
-                                        isExpanded: true,
-                                        hint: const Text("مكان العمل", style: TextStyle(fontSize: 11)),
-                                        items: locationsList.map((l) => DropdownMenuItem(value: l, child: Text(l, style: TextStyle(fontSize: 11)))).toList(),
-                                        onChanged: (val) => setState(() => selectedLocation = val),
-                                        decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: SizedBox(
-                                      height: 36,
-                                      child: DropdownButtonFormField<String>(
-                                        initialValue: selectedDateTo,
-                                        isExpanded: true,
-                                        hint: const Text("تاريخ النهاية", style: TextStyle(fontSize: 11)),
-                                        items: datesList.map((d) => DropdownMenuItem(value: d, child: Text(d, style: TextStyle(fontSize: 11)))).toList(),
-                                        onChanged: (val) => setState(() => selectedDateTo = val),
-                                        decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('orders').orderBy('createdAt', descending: true).snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return const Center(child: Text("حدث خطأ في جلب البيانات من السحابة"));
+          }
+
+          List<Map<String, dynamic>> allCloudOrders = [];
+          if (snapshot.hasData) {
+            for (var doc in snapshot.data!.docs) {
+              allCloudOrders.add(doc.data() as Map<String, dynamic>);
+            }
+          }
+
+          List<String> allClients = allCloudOrders
+              .map((e) => (e['client'] ?? e['client_name'] ?? '').toString())
+              .where((e) => e.isNotEmpty)
+              .toSet()
+              .toList();
+
+          List<Map<String, dynamic>> clientRows = selectedClient == null || selectedClient!.isEmpty
+              ? []
+              : allCloudOrders.where((e) => (e['client'] ?? e['client_name'] ?? '').toString().contains(selectedClient!)).toList();
+
+          List<String> locationsList = clientRows.map((e) => (e['location'] ?? e['work_location'] ?? '').toString()).where((e) => e.isNotEmpty).toSet().toList();
+          List<String> datesList = clientRows.map((e) => (e['date'] ?? e['created_date'] ?? '').toString()).where((e) => e.isNotEmpty).toSet().toList();
+          List<String> orderNumbers = clientRows.map((e) => (e['order'] ?? e['order_num'] ?? '').toString()).where((e) => e.isNotEmpty).toSet().toList();
+
+          List<Map<String, dynamic>> rawFilteredList = _getFilteredData(allCloudOrders);
+          List<Map<String, dynamic>> filteredList = _processSummaryRows(rawFilteredList);
+
+          Map<String, double> groupTotals = _calculateGroupTotals(filteredList);
+          Map<String, bool> groupFirstSeen = {};
+
+          double totalAccount = 0;
+          double totalPaid = 0;
+          for (var item in rawFilteredList) {
+            totalAccount += double.tryParse((item['total'] ?? item['total_amount'] ?? '0').toString()) ?? 0;
+            totalPaid += double.tryParse((item['paid'] ?? item['paid_amount'] ?? item['payment'] ?? '0').toString()) ?? 0;
+          }
+          double totalRemaining = totalAccount - totalPaid;
+
+          const double tableMinWidth = 1750.0;
+
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.88,
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3)],
                         ),
-                        const SizedBox(width: 15),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(6)),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              const Text("نوع العرض:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text("فاتورة مختصرة", style: TextStyle(fontSize: 11)),
-                                  Radio<String>(
-                                    value: "مختصرة",
-                                    groupValue: invoiceType,
-                                    onChanged: (val) => setState(() => invoiceType = val!),
-                                  ),
-                                  const Text("كشف تفصيلي", style: TextStyle(fontSize: 11)),
-                                  Radio<String>(
-                                    value: "تفصيلية",
-                                    groupValue: invoiceType,
-                                    onChanged: (val) => setState(() => invoiceType = val!),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-                        Wrap(
-                          spacing: 8,
-                          direction: Axis.vertical,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ElevatedButton.icon(
-                              onPressed: () => setState(() {}),
-                              icon: const Icon(Icons.search, size: 16),
-                              label: const Text("جلب البيانات"),
-                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white),
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                ElevatedButton(
-                                  onPressed: _showPdfSettingsDialog,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF1E3A8A),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                                    minimumSize: const Size(36, 36),
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: SizedBox(
+                                          height: 36,
+                                          child: Autocomplete<String>(
+                                            optionsBuilder: (TextEditingValue textEditingValue) {
+                                              if (textEditingValue.text.isEmpty) {
+                                                return allClients;
+                                              }
+                                              return allClients.where((c) => c.contains(textEditingValue.text));
+                                            },
+                                            onSelected: (String selection) {
+                                              _onClientSelected(selection);
+                                            },
+                                            fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                                              if (controller.text.isEmpty && selectedClient != null) {
+                                                controller.text = selectedClient!;
+                                              }
+                                              return TextField(
+                                                controller: controller,
+                                                focusNode: focusNode,
+                                                decoration: const InputDecoration(
+                                                  hintText: "اسم العميل",
+                                                  hintStyle: TextStyle(fontSize: 11),
+                                                  border: OutlineInputBorder(),
+                                                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                                ),
+                                                style: const TextStyle(fontSize: 11),
+                                                onChanged: (val) {
+                                                  setState(() {
+                                                    selectedClient = val.isEmpty ? null : val;
+                                                    selectedLocation = null;
+                                                    selectedOrderNum = null;
+                                                  });
+                                                },
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: SizedBox(
+                                          height: 36,
+                                          child: DropdownButtonFormField<String>(
+                                            initialValue: selectedDateFrom,
+                                            isExpanded: true,
+                                            hint: const Text("تاريخ البداية", style: TextStyle(fontSize: 11)),
+                                            items: datesList.map((d) => DropdownMenuItem(value: d, child: Text(d, style: const TextStyle(fontSize: 11)))).toList(),
+                                            onChanged: (val) => setState(() => selectedDateFrom = val),
+                                            decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: SizedBox(
+                                          height: 36,
+                                          child: DropdownButtonFormField<String>(
+                                            initialValue: selectedOrderNum,
+                                            isExpanded: true,
+                                            hint: const Text("رقم الطلب", style: TextStyle(fontSize: 11)),
+                                            items: orderNumbers.map((ord) => DropdownMenuItem(value: ord, child: Text(ord, style: const TextStyle(fontSize: 11)))).toList(),
+                                            onChanged: (val) => setState(() => selectedOrderNum = val),
+                                            decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  child: const Icon(Icons.settings, size: 16),
-                                ),
-                                const SizedBox(width: 4),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: SizedBox(
+                                          height: 36,
+                                          child: DropdownButtonFormField<String>(
+                                            initialValue: selectedLocation,
+                                            isExpanded: true,
+                                            hint: const Text("مكان العمل", style: TextStyle(fontSize: 11)),
+                                            items: locationsList.map((l) => DropdownMenuItem(value: l, child: Text(l, style: const TextStyle(fontSize: 11)))).toList(),
+                                            onChanged: (val) => setState(() => selectedLocation = val),
+                                            decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: SizedBox(
+                                          height: 36,
+                                          child: DropdownButtonFormField<String>(
+                                            initialValue: selectedDateTo,
+                                            isExpanded: true,
+                                            hint: const Text("تاريخ النهاية", style: TextStyle(fontSize: 11)),
+                                            items: datesList.map((d) => DropdownMenuItem(value: d, child: Text(d, style: const TextStyle(fontSize: 11)))).toList(),
+                                            onChanged: (val) => setState(() => selectedDateTo = val),
+                                            decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 15),
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(6)),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  const Text("نوع العرض:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text("فاتورة مختصرة", style: TextStyle(fontSize: 11)),
+                                      Radio<String>(
+                                        value: "مختصرة",
+                                        groupValue: invoiceType,
+                                        onChanged: (val) => setState(() => invoiceType = val!),
+                                      ),
+                                      const Text("كشف تفصيلي", style: TextStyle(fontSize: 11)),
+                                      Radio<String>(
+                                        value: "تفصيلية",
+                                        groupValue: invoiceType,
+                                        onChanged: (val) => setState(() => invoiceType = val!),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 15),
+                            Wrap(
+                              spacing: 8,
+                              direction: Axis.vertical,
+                              children: [
                                 ElevatedButton.icon(
-                                  onPressed: _exportStatementPdf,
-                                  icon: const Icon(Icons.picture_as_pdf, size: 16),
-                                  label: const Text("طباعة PDF"),
-                                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
+                                  onPressed: () => setState(() {}),
+                                  icon: const Icon(Icons.search, size: 16),
+                                  label: const Text("جلب البيانات"),
+                                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white),
+                                ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ElevatedButton(
+                                      onPressed: _showPdfSettingsDialog,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF1E3A8A),
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                                        minimumSize: const Size(36, 36),
+                                      ),
+                                      child: const Icon(Icons.settings, size: 16),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    ElevatedButton.icon(
+                                      onPressed: _exportStatementPdf,
+                                      icon: const Icon(Icons.picture_as_pdf, size: 16),
+                                      label: const Text("طباعة PDF"),
+                                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey.shade300),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // رؤوس الجدول مع ربط _headerScrollController المنفصل والمزامن
-                          Container(
-                            color: const Color(0xFF1E3A8A),
-                            child: SingleChildScrollView(
-                              controller: _headerScrollController,
-                              scrollDirection: Axis.horizontal,
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(minWidth: tableMinWidth),
-                                child: Row(
-                                  children: const [
-                                    SizedBox(width: 50, child: Padding(padding: EdgeInsets.all(12.0), child: Text("م", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 90, child: Padding(padding: EdgeInsets.all(12.0), child: Text("رقم الطلب", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 120, child: Padding(padding: EdgeInsets.all(12.0), child: Text("مكان العمل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 120, child: Padding(padding: EdgeInsets.all(12.0), child: Text("بيان العمل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 130, child: Padding(padding: EdgeInsets.all(12.0), child: Text("نوع الخامة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 70, child: Padding(padding: EdgeInsets.all(12.0), child: Text("العدد", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 90, child: Padding(padding: EdgeInsets.all(12.0), child: Text("المساحة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 90, child: Padding(padding: EdgeInsets.all(12.0), child: Text("السعر", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 110, child: Padding(padding: EdgeInsets.all(12.0), child: Text("الحساب", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 100, child: Padding(padding: EdgeInsets.all(12.0), child: Text("المدفوعات", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 100, child: Padding(padding: EdgeInsets.all(12.0), child: Text("نوع الدفع", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 110, child: Padding(padding: EdgeInsets.all(12.0), child: Text("التاريخ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                    SizedBox(width: 230, child: Padding(padding: EdgeInsets.all(12.0), child: Text("إجمالي حساب العمل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
-                                  ],
-                                ),
-                              ),
-                            ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        flex: 1,
+                        child: Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
                           ),
-                          Expanded(
-                            child: Scrollbar(
-                              controller: _horizontalScrollController,
-                              thumbVisibility: true,
-                              trackVisibility: true,
-                              child: SingleChildScrollView(
-                                controller: _horizontalScrollController,
-                                scrollDirection: Axis.horizontal,
-                                child: ConstrainedBox(
-                                  constraints: const BoxConstraints(minWidth: tableMinWidth),
-                                  child: SizedBox(
-                                    width: tableMinWidth,
-                                    child: ListView.builder(
-                                      itemCount: filteredList.length,
-                                      itemBuilder: (context, index) {
-                                        final item = filteredList[index];
-                                        bool isSelected = selectedRowIndex == index;
-
-                                        String client = (item['client'] ?? item['client_name'] ?? '').toString().trim();
-                                        String location = (item['location'] ?? item['work_location'] ?? '').toString().trim();
-                                        String workType = (item['workType'] ?? item['work_type'] ?? '').toString().trim();
-                                        String key = "$client|$location|$workType";
-
-                                        String groupWorkTotalStr = "";
-                                        if (!(groupFirstSeen[key] ?? false)) {
-                                          groupFirstSeen[key] = true;
-                                          double sumVal = groupTotals[key] ?? 0;
-                                          groupWorkTotalStr = "${_formatRoundedMoney(sumVal)}   $workType";
-                                        }
-
-                                        double areaVal = double.tryParse((item['area'] ?? '0').toString()) ?? 0;
-                                        String areaStr = areaVal > 0 ? "${_formatMoney(areaVal)} متر" : "0.00";
-
-                                        String payTypeVal = item['method'] ?? item['payment_type'] ?? item['pay_type'] ?? item['paymentType'] ?? '-';
-                                        String paidVal = _formatMoney(item['paid'] ?? item['paid_amount'] ?? item['payment'] ?? '0');
-
-                                        return InkWell(
-                                          onTap: () {
-                                            setState(() {
-                                              selectedRowIndex = index;
-                                            });
-                                          },
-                                          child: Container(
-                                            color: isSelected ? Colors.blue.shade100 : (index % 2 == 0 ? Colors.white : Colors.grey.shade50),
-                                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
-                                            child: Row(
-                                              children: [
-                                                SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${index + 1}", style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['order'] ?? item['order_num'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 120, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(location, style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 120, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(workType, style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 130, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['material'] ?? item['material_type'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 70, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['qty'] ?? item['unit_count'] ?? '1'}", style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(areaStr, style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['sell'] ?? item['price'] ?? '0'), style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 110, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['total'] ?? item['total_amount'] ?? '0'), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 11)))),
-                                                SizedBox(width: 100, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(paidVal, style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 100, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(payTypeVal, style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 110, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['date'] ?? item['created_date'] ?? ''}", style: const TextStyle(fontSize: 11)))),
-                                                SizedBox(width: 230, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(groupWorkTotalStr, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A), fontSize: 11)))),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Container(
+                                color: const Color(0xFF1E3A8A),
+                                child: SingleChildScrollView(
+                                  controller: _headerScrollController,
+                                  scrollDirection: Axis.horizontal,
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(minWidth: tableMinWidth),
+                                    child: Row(
+                                      children: const [
+                                        SizedBox(width: 50, child: Padding(padding: EdgeInsets.all(12.0), child: Text("م", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                        SizedBox(width: 90, child: Padding(padding: EdgeInsets.all(12.0), child: Text("رقم الطلب", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                        SizedBox(width: 120, child: Padding(padding: EdgeInsets.all(12.0), child: Text("مكان العمل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                        SizedBox(width: 120, child: Padding(padding: EdgeInsets.all(12.0), child: Text("بيان العمل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                        SizedBox(width: 130, child: Padding(padding: EdgeInsets.all(12.0), child: Text("نوع الخامة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                        SizedBox(width: 70, child: Padding(padding: EdgeInsets.all(12.0), child: Text("العدد", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                        SizedBox(width: 90, child: Padding(padding: EdgeInsets.all(12.0), child: Text("المساحة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                        SizedBox(width: 90, child: Padding(padding: EdgeInsets.all(12.0), child: Text("السعر", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                        SizedBox(width: 110, child: Padding(padding: EdgeInsets.all(12.0), child: Text("الحساب", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                        SizedBox(width: 100, child: Padding(padding: EdgeInsets.all(12.0), child: Text("المدفوعات", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                        SizedBox(width: 100, child: Padding(padding: EdgeInsets.all(12.0), child: Text("نوع الدفع", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                        SizedBox(width: 110, child: Padding(padding: EdgeInsets.all(12.0), child: Text("التاريخ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                        SizedBox(width: 230, child: Padding(padding: EdgeInsets.all(12.0), child: Text("إجمالي حساب العمل", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))),
+                                      ],
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
+                              Expanded(
+                                child: Scrollbar(
+                                  controller: _horizontalScrollController,
+                                  thumbVisibility: true,
+                                  trackVisibility: true,
+                                  child: SingleChildScrollView(
+                                    controller: _horizontalScrollController,
+                                    scrollDirection: Axis.horizontal,
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(minWidth: tableMinWidth),
+                                      child: SizedBox(
+                                        width: tableMinWidth,
+                                        child: ListView.builder(
+                                          itemCount: filteredList.length,
+                                          itemBuilder: (context, index) {
+                                            final item = filteredList[index];
+                                            bool isSelected = selectedRowIndex == index;
+
+                                            String client = (item['client'] ?? item['client_name'] ?? '').toString().trim();
+                                            String location = (item['location'] ?? item['work_location'] ?? '').toString().trim();
+                                            String workType = (item['workType'] ?? item['work_type'] ?? '').toString().trim();
+                                            String key = "$client|$location|$workType";
+
+                                            String groupWorkTotalStr = "";
+                                            if (!(groupFirstSeen[key] ?? false)) {
+                                              groupFirstSeen[key] = true;
+                                              double sumVal = groupTotals[key] ?? 0;
+                                              groupWorkTotalStr = "${_formatRoundedMoney(sumVal)}   $workType";
+                                            }
+
+                                            double areaVal = double.tryParse((item['area'] ?? '0').toString()) ?? 0;
+                                            String areaStr = areaVal > 0 ? "${_formatMoney(areaVal)} متر" : "0.00";
+
+                                            String payTypeVal = item['method'] ?? item['payment_type'] ?? item['pay_type'] ?? item['paymentType'] ?? '-';
+                                            String paidVal = _formatMoney(item['paid'] ?? item['paid_amount'] ?? item['payment'] ?? '0');
+
+                                            return InkWell(
+                                              onTap: () {
+                                                setState(() {
+                                                  selectedRowIndex = index;
+                                                });
+                                              },
+                                              child: Container(
+                                                color: isSelected ? Colors.blue.shade100 : (index % 2 == 0 ? Colors.white : Colors.grey.shade50),
+                                                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+                                                child: Row(
+                                                  children: [
+                                                    SizedBox(width: 50, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${index + 1}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['order'] ?? item['order_num'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 120, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(location, style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 120, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(workType, style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 130, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['material'] ?? item['material_type'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 70, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['qty'] ?? item['unit_count'] ?? '1'}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(areaStr, style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['sell'] ?? item['price'] ?? '0'), style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 110, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(_formatMoney(item['total'] ?? item['total_amount'] ?? '0'), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 11)))),
+                                                    SizedBox(width: 100, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(paidVal, style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 100, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(payTypeVal, style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 110, child: Padding(padding: const EdgeInsets.all(8.0), child: Text("${item['date'] ?? item['created_date'] ?? ''}", style: const TextStyle(fontSize: 11)))),
+                                                    SizedBox(width: 230, child: Padding(padding: const EdgeInsets.all(8.0), child: Text(groupWorkTotalStr, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A), fontSize: 11)))),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildSummaryCard("إجمالي الباقي:", "${_formatRoundedMoney(totalRemaining)} ج.م", Colors.red),
+                            _buildSummaryCard("إجمالي المدفوعات:", "${_formatMoney(totalPaid)} ج.م", Colors.green.shade700),
+                            _buildSummaryCard("إجمالي الحساب:", "${_formatRoundedMoney(totalAccount)} ج.م", Colors.blue.shade700),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildSummaryCard("إجمالي الباقي:", "${_formatRoundedMoney(totalRemaining)} ج.م", Colors.red),
-                        _buildSummaryCard("إجمالي المدفوعات:", "${_formatMoney(totalPaid)} ج.م", Colors.green.shade700),
-                        _buildSummaryCard("إجمالي الحساب:", "${_formatRoundedMoney(totalAccount)} ج.م", Colors.blue.shade700),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

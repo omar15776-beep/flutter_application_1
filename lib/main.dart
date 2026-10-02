@@ -1,35 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'app_data.dart';
-import 'login_screen.dart';
-import 'main_dashboard.dart';
+import 'main_dashboard.dart'; // أو شاشة البداية لديك
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 📱 تهيئة فايربيس للعمل أونلاين
-  await Firebase.initializeApp();
+  // تهيئة فايربيس بالبيانات المباشرة لمشروعك
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(
+      apiKey: "ضع_مفتاح_الـ_API_هنا",
+      appId: "ضع_معرف_التطبيق_هنا",
+      messagingSenderId: "ضع_رقم_المُرسل_هنا",
+      projectId: "businessapp-1786e", // معرف مشروعك الظاهر في المتصفح
+      storageBucket: "businessapp-1786e.appspot.com",
+    ),
+  );
 
-  // تحميل البيانات المحفوظة للتأكد من وجود مستخدمين أم لا
-  await AppData.loadData();
-  
-  // فحص ما إذا كان هناك مستخدمون بكلمات مرور مسجلة
-  bool hasUsers = AppData.users.isNotEmpty;
-
-  runApp(MyApp(hasUsers: hasUsers));
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  final bool hasUsers;
-  const MyApp({super.key, required this.hasUsers});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'تطبيق الشركة',
-      // إذا كانت قائمة المستخدمين فارغة، افتح اللوحة الرئيسية مباشرة، وإذا وجد مستخدمون اذهب لشاشة تسجيل الدخول
-      home: hasUsers ? const LoginScreen() : const MainDashboardScreen(),
+      title: 'Business App',
+      home: const MainDashboardScreen(), // الشاشة الرئيسية لديك
     );
   }
 }
