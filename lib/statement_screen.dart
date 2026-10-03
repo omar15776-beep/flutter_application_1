@@ -6,6 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'app_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StatementScreen extends StatefulWidget {
   const StatementScreen({super.key});
@@ -62,16 +63,59 @@ class _StatementScreenState extends State<StatementScreen> {
   String pdfFooterNotes = "ملاحظات: يرجى مراجعة الحسابات في حال وجود أي استفسار.";
   double pdfFooterFontSize = 8.0;
 
-  // 7. مقاسات عرض الأعمدة للـ PDF (11 عموداً بعد استبعاد رقم الطلب)
+  // 7. مقاسات عرض الأعمدة للـ PDF
   List<double> pdfColWidths = [30.0, 85.0, 85.0, 90.0, 45.0, 60.0, 60.0, 70.0, 65.0, 65.0, 110.0];
 
+  // دالة لجلب إعدادات الـ PDF المحفوظة محلياً
+  Future<void> _loadPdfSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedFontFamily = prefs.getString('pdf_font_family') ?? selectedFontFamily;
+      pdfShowCompanyName = prefs.getBool('pdf_show_company_name') ?? pdfShowCompanyName;
+      pdfShowLogo = prefs.getBool('pdf_show_logo') ?? pdfShowLogo;
+      pdfLogoWidth = prefs.getDouble('pdf_logo_width') ?? pdfLogoWidth;
+      pdfLogoHeight = prefs.getDouble('pdf_logo_height') ?? pdfLogoHeight;
+      pdfCompanyNameFontSize = prefs.getDouble('pdf_company_name_font_size') ?? pdfCompanyNameFontSize;
+      pdfHeaderQuoteText = prefs.getString('pdf_header_quote_text') ?? pdfHeaderQuoteText;
+      pdfHeaderDateText = prefs.getString('pdf_header_date_text') ?? pdfHeaderDateText;
+      pdfHeaderBarFontSize = prefs.getDouble('pdf_header_bar_font_size') ?? pdfHeaderBarFontSize;
+      pdfHeaderTableFontSize = prefs.getDouble('pdf_header_table_font_size') ?? pdfHeaderTableFontSize;
+      pdfRowFontSize = prefs.getDouble('pdf_row_font_size') ?? pdfRowFontSize;
+      pdfRowHeight = prefs.getDouble('pdf_row_height') ?? pdfRowHeight;
+      pdfTotalsFontSize = prefs.getDouble('pdf_totals_font_size') ?? pdfTotalsFontSize;
+      pdfFooterNotes = prefs.getString('pdf_footer_notes') ?? pdfFooterNotes;
+      pdfFooterFontSize = prefs.getDouble('pdf_footer_font_size') ?? pdfFooterFontSize;
+    });
+  }
+
+  // دالة لحفظ إعدادات الـ PDF محلياً
+  Future<void> _savePdfSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('pdf_font_family', selectedFontFamily);
+    await prefs.setBool('pdf_show_company_name', pdfShowCompanyName);
+    await prefs.setBool('pdf_show_logo', pdfShowLogo);
+    await prefs.setDouble('pdf_logo_width', pdfLogoWidth);
+    await prefs.setDouble('pdf_logo_height', pdfLogoHeight);
+    await prefs.setDouble('pdf_company_name_font_size', pdfCompanyNameFontSize);
+    await prefs.setString('pdf_header_quote_text', pdfHeaderQuoteText);
+    await prefs.setString('pdf_header_date_text', pdfHeaderDateText);
+    await prefs.setDouble('pdf_header_bar_font_size', pdfHeaderBarFontSize);
+    await prefs.setDouble('pdf_header_table_font_size', pdfHeaderTableFontSize);
+    await prefs.setDouble('pdf_row_font_size', pdfRowFontSize);
+    await prefs.setDouble('pdf_row_height', pdfRowHeight);
+    await prefs.setDouble('pdf_totals_font_size', pdfTotalsFontSize);
+    await prefs.setString('pdf_footer_notes', pdfFooterNotes);
+    await prefs.setDouble('pdf_footer_font_size', pdfFooterFontSize);
+  }
+
   final ScrollController _horizontalScrollController = ScrollController();
-  final ScrollController _headerScrollController = ScrollController(); // متحكم منفصل لرؤوس الجدول لمنع التعارض
+  final ScrollController _headerScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    // مزامنة حركة رؤوس الجدول مع جدول البيانات بسلاسة تامة
+    _loadPdfSettings(); // استرجاع الإعدادات المحفوظة فور فتح الشاشة
+    
     _horizontalScrollController.addListener(() {
       if (_headerScrollController.hasClients && _headerScrollController.offset != _horizontalScrollController.offset) {
         _headerScrollController.jumpTo(_horizontalScrollController.offset);
@@ -79,7 +123,7 @@ class _StatementScreenState extends State<StatementScreen> {
     });
     _headerScrollController.addListener(() {
       if (_horizontalScrollController.hasClients && _horizontalScrollController.offset != _headerScrollController.offset) {
-        _horizontalScrollController.jumpTo(_headerScrollController.offset);
+        _horizontalScrollController.jumpTo(_horizontalScrollController.offset);
       }
     });
   }
@@ -119,31 +163,30 @@ class _StatementScreenState extends State<StatementScreen> {
     });
   }
 
-  // استبدل دالة _getFilteredData القديمة بهذه الدالة لتعتمد على البيانات السحابية مباشرة
   List<Map<String, dynamic>> _getFilteredData(List<Map<String, dynamic>> allCloudOrders) {
-  if (selectedClient == null || selectedClient!.isEmpty) {
-    return [];
+    if (selectedClient == null || selectedClient!.isEmpty) {
+      return [];
+    }
+
+    List<Map<String, dynamic>> clientFiltered = allCloudOrders.where((item) {
+      String client = (item['client'] ?? item['client_name'] ?? '').toString();
+      return client.contains(selectedClient!);
+    }).toList();
+
+    return clientFiltered.where((item) {
+      String loc = (item['location'] ?? item['work_location'] ?? '').toString();
+      bool matchesLocation = selectedLocation == null || selectedLocation!.isEmpty || loc == selectedLocation;
+      
+      String ord = (item['order'] ?? item['order_num'] ?? '').toString();
+      bool matchesOrder = selectedOrderNum == null || selectedOrderNum!.isEmpty || ord == selectedOrderNum;
+      
+      String itemDate = (item['date'] ?? item['created_date'] ?? '').toString();
+      bool matchesDateFrom = selectedDateFrom == null || selectedDateFrom!.isEmpty || itemDate.compareTo(selectedDateFrom!) >= 0;
+      bool matchesDateTo = selectedDateTo == null || selectedDateTo!.isEmpty || itemDate.compareTo(selectedDateTo!) <= 0;
+
+      return matchesLocation && matchesOrder && matchesDateFrom && matchesDateTo;
+    }).toList();
   }
-
-  List<Map<String, dynamic>> clientFiltered = allCloudOrders.where((item) {
-    String client = (item['client'] ?? item['client_name'] ?? '').toString();
-    return client.contains(selectedClient!);
-  }).toList();
-
-  return clientFiltered.where((item) {
-    String loc = (item['location'] ?? item['work_location'] ?? '').toString();
-    bool matchesLocation = selectedLocation == null || selectedLocation!.isEmpty || loc == selectedLocation;
-    
-    String ord = (item['order'] ?? item['order_num'] ?? '').toString();
-    bool matchesOrder = selectedOrderNum == null || selectedOrderNum!.isEmpty || ord == selectedOrderNum;
-    
-    String itemDate = (item['date'] ?? item['created_date'] ?? '').toString();
-    bool matchesDateFrom = selectedDateFrom == null || selectedDateFrom!.isEmpty || itemDate.compareTo(selectedDateFrom!) >= 0;
-    bool matchesDateTo = selectedDateTo == null || selectedDateTo!.isEmpty || itemDate.compareTo(selectedDateTo!) <= 0;
-
-    return matchesLocation && matchesOrder && matchesDateFrom && matchesDateTo;
-  }).toList();
-}
 
   Map<String, double> _calculateGroupTotals(List<Map<String, dynamic>> rows) {
     Map<String, double> groupTotals = {};
@@ -446,9 +489,10 @@ class _StatementScreenState extends State<StatementScreen> {
                 actions: [
                   TextButton(onPressed: () => Navigator.pop(context), child: const Text("إلغاء")),
                   ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(context);
                       setState(() {});
+                      await _savePdfSettings(); // حفظ الإعدادات محلياً عند الضغط هنا
                       _exportStatementPdf();
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
@@ -464,7 +508,6 @@ class _StatementScreenState extends State<StatementScreen> {
   }
 
   void _exportStatementPdf() async {
-    // جلب البيانات مباشرة من سحابة فايربيس للـ PDF
     QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('orders').get();
     List<Map<String, dynamic>> allCloudOrders = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
 

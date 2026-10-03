@@ -5,15 +5,15 @@ import 'package:pdf/pdf.dart' as pw;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'app_data.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StatementOfferScreen extends StatefulWidget {
   const StatementOfferScreen({super.key});
-
   @override
-  _StatementOfferScreenState createState() => _StatementOfferScreenState();
+_StatementOfferScreenState createState() => _StatementOfferScreenState();
 }
 
-class _StatementOfferScreenState extends State<StatementOfferScreen> {
+class _StatementOfferScreenState extends State {
   String? selectedClient;
   String? selectedLocation;
   String? selectedDateFrom;
@@ -67,10 +67,33 @@ class _StatementOfferScreenState extends State<StatementOfferScreen> {
 
   final ScrollController _horizontalScrollController = ScrollController();
   final ScrollController _headerScrollController = ScrollController();
+  // دالة لجلب إعدادات الـ PDF المحفوظة محلياً
+  Future _loadPdfSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedFontFamily = prefs.getString('pdf_font_family') ?? selectedFontFamily;
+      pdfShowCompanyName = prefs.getBool('pdf_show_company_name') ?? pdfShowCompanyName;
+      pdfShowLogo = prefs.getBool('pdf_show_logo') ?? pdfShowLogo;
+      pdfLogoWidth = prefs.getDouble('pdf_logo_width') ?? pdfLogoWidth;
+      pdfLogoHeight = prefs.getDouble('pdf_logo_height') ?? pdfLogoHeight;
+    });
+  }
+
+  // دالة لحفظ إعدادات الـ PDF محلياً
+  Future _savePdfSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('pdf_font_family', selectedFontFamily);
+    await prefs.setBool('pdf_show_company_name', pdfShowCompanyName);
+    await prefs.setBool('pdf_show_logo', pdfShowLogo);
+    await prefs.setDouble('pdf_logo_width', pdfLogoWidth);
+    await prefs.setDouble('pdf_logo_height', pdfLogoHeight);
+  }
 
   @override
   void initState() {
     super.initState();
+    _loadPdfSettings(); 
+    
     _horizontalScrollController.addListener(() {
       if (_headerScrollController.hasClients && _headerScrollController.offset != _horizontalScrollController.offset) {
         _headerScrollController.jumpTo(_horizontalScrollController.offset);
@@ -445,9 +468,10 @@ class _StatementOfferScreenState extends State<StatementOfferScreen> {
                 actions: [
                   TextButton(onPressed: () => Navigator.pop(context), child: const Text("إلغاء")),
                   ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(context);
                       setState(() {});
+                      await _savePdfSettings(); // <--- أضف هذا السطر هنا لحفظ الإعدادات محلياً
                       _exportStatementPdf();
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
